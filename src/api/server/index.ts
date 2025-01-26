@@ -82,6 +82,9 @@ export class ExternalApiServer {
 	 * - GET /api/tasks/logs: Get task logs for current task
 	 * - GET /api/tasks/:id/logs: Get task logs for a specific task
 	 * - GET /api/tasks: List tasks with pagination, sorting by recency, and including task metadata
+	 * - GET /api/auto-approve: Get all auto-approve settings
+	 * - POST /api/auto-approve: Update all auto-approve settings
+	 * - POST /api/auto-approve/enabled: Update master auto-approve switch
 	 */
 	private setupRoutes(): void {
 		// Get custom instructions
@@ -391,6 +394,109 @@ export class ExternalApiServer {
 			} catch (error) {
 				console.error("Error listing tasks:", error)
 				return res.status(500).json({ error: "Failed to list tasks" })
+			}
+		})
+
+		// Get all auto-approve settings
+		this.app.get("/api/auto-approve", async (req: Request, res: Response) => {
+			try {
+				const state = await this.clineApi.sidebarProvider.getState()
+				return res.json({
+					autoApprovalEnabled: state.autoApprovalEnabled ?? false,
+					alwaysAllowReadOnly: state.alwaysAllowReadOnly ?? false,
+					alwaysAllowWrite: state.alwaysAllowWrite ?? false,
+					alwaysAllowExecute: state.alwaysAllowExecute ?? false,
+					alwaysAllowBrowser: state.alwaysAllowBrowser ?? false,
+					alwaysAllowMcp: state.alwaysAllowMcp ?? false,
+					alwaysApproveResubmit: state.alwaysApproveResubmit ?? false,
+				})
+			} catch (error) {
+				console.error("Error getting auto-approve settings:", error)
+				return res.status(500).json({ error: "Failed to get auto-approve settings" })
+			}
+		})
+
+		// Update all auto-approve settings
+		this.app.post("/api/auto-approve", async (req: Request, res: Response) => {
+			try {
+				const {
+					autoApprovalEnabled,
+					alwaysAllowReadOnly,
+					alwaysAllowWrite,
+					alwaysAllowExecute,
+					alwaysAllowBrowser,
+					alwaysAllowMcp,
+					alwaysApproveResubmit,
+				} = req.body
+
+				// Validate all fields are boolean
+				const settings = {
+					autoApprovalEnabled,
+					alwaysAllowReadOnly,
+					alwaysAllowWrite,
+					alwaysAllowExecute,
+					alwaysAllowBrowser,
+					alwaysAllowMcp,
+					alwaysApproveResubmit,
+				}
+
+				for (const [key, value] of Object.entries(settings)) {
+					if (value !== undefined && typeof value !== "boolean") {
+						return res.status(400).json({ error: `${key} must be a boolean` })
+					}
+				}
+
+				// Update each setting if provided
+				if (autoApprovalEnabled !== undefined) {
+					await this.clineApi.sidebarProvider.updateGlobalState("autoApprovalEnabled", autoApprovalEnabled)
+				}
+				if (alwaysAllowReadOnly !== undefined) {
+					await this.clineApi.sidebarProvider.updateGlobalState("alwaysAllowReadOnly", alwaysAllowReadOnly)
+				}
+				if (alwaysAllowWrite !== undefined) {
+					await this.clineApi.sidebarProvider.updateGlobalState("alwaysAllowWrite", alwaysAllowWrite)
+				}
+				if (alwaysAllowExecute !== undefined) {
+					await this.clineApi.sidebarProvider.updateGlobalState("alwaysAllowExecute", alwaysAllowExecute)
+				}
+				if (alwaysAllowBrowser !== undefined) {
+					await this.clineApi.sidebarProvider.updateGlobalState("alwaysAllowBrowser", alwaysAllowBrowser)
+				}
+				if (alwaysAllowMcp !== undefined) {
+					await this.clineApi.sidebarProvider.updateGlobalState("alwaysAllowMcp", alwaysAllowMcp)
+				}
+				if (alwaysApproveResubmit !== undefined) {
+					await this.clineApi.sidebarProvider.updateGlobalState(
+						"alwaysApproveResubmit",
+						alwaysApproveResubmit,
+					)
+				}
+
+				// Update webview state
+				await this.clineApi.sidebarProvider.postStateToWebview()
+
+				return res.json({ success: true })
+			} catch (error) {
+				console.error("Error updating auto-approve settings:", error)
+				return res.status(500).json({ error: "Failed to update auto-approve settings" })
+			}
+		})
+
+		// Update master auto-approve switch
+		this.app.post("/api/auto-approve/enabled", async (req: Request, res: Response) => {
+			try {
+				const { enabled } = req.body
+				if (typeof enabled !== "boolean") {
+					return res.status(400).json({ error: "enabled must be a boolean" })
+				}
+
+				await this.clineApi.sidebarProvider.updateGlobalState("autoApprovalEnabled", enabled)
+				await this.clineApi.sidebarProvider.postStateToWebview()
+
+				return res.json({ success: true })
+			} catch (error) {
+				console.error("Error updating auto-approve enabled setting:", error)
+				return res.status(500).json({ error: "Failed to update auto-approve enabled setting" })
 			}
 		})
 	}

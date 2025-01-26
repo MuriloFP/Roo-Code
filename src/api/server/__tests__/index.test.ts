@@ -1098,4 +1098,147 @@ describe("ExternalApiServer", () => {
 			expect(response.body.error).toBe("Failed to list tasks")
 		})
 	})
+
+	describe("GET /api/auto-approve", () => {
+		it("should return auto-approve settings successfully", async () => {
+			// Mock the state
+			const mockState = {
+				autoApprovalEnabled: true,
+				alwaysAllowReadOnly: true,
+				alwaysAllowWrite: false,
+				alwaysAllowExecute: true,
+				alwaysAllowBrowser: false,
+				alwaysAllowMcp: true,
+				alwaysApproveResubmit: false,
+			}
+			mockClineApi.sidebarProvider.getState = jest.fn().mockResolvedValue(mockState)
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/auto-approve",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual(mockState)
+			expect(mockClineApi.sidebarProvider.getState).toHaveBeenCalled()
+		})
+
+		it("should handle errors", async () => {
+			mockClineApi.sidebarProvider.getState = jest.fn().mockRejectedValue(new Error("test error"))
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/auto-approve",
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to get auto-approve settings")
+		})
+	})
+
+	describe("POST /api/auto-approve", () => {
+		beforeEach(() => {
+			mockClineApi.sidebarProvider.updateGlobalState = jest.fn().mockResolvedValue(undefined)
+			mockClineApi.sidebarProvider.postStateToWebview = jest.fn().mockResolvedValue(undefined)
+		})
+
+		it("should update settings successfully", async () => {
+			const settings = {
+				autoApprovalEnabled: true,
+				alwaysAllowReadOnly: true,
+				alwaysAllowWrite: false,
+				alwaysAllowExecute: true,
+				alwaysAllowBrowser: false,
+				alwaysAllowMcp: true,
+				alwaysApproveResubmit: false,
+			}
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/auto-approve",
+				body: settings,
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({ success: true })
+			expect(mockClineApi.sidebarProvider.updateGlobalState).toHaveBeenCalledTimes(7)
+			expect(mockClineApi.sidebarProvider.postStateToWebview).toHaveBeenCalled()
+		})
+
+		it("should validate boolean fields", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/auto-approve",
+				body: { autoApprovalEnabled: "not a boolean" },
+			})
+
+			expect(response.status).toBe(400)
+			expect(response.body.error).toBe("autoApprovalEnabled must be a boolean")
+		})
+
+		it("should handle errors", async () => {
+			mockClineApi.sidebarProvider.updateGlobalState = jest.fn().mockRejectedValue(new Error("test error"))
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/auto-approve",
+				body: { autoApprovalEnabled: true },
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to update auto-approve settings")
+		})
+	})
+
+	describe("POST /api/auto-approve/enabled", () => {
+		beforeEach(() => {
+			mockClineApi.sidebarProvider.updateGlobalState = jest.fn().mockResolvedValue(undefined)
+			mockClineApi.sidebarProvider.postStateToWebview = jest.fn().mockResolvedValue(undefined)
+		})
+
+		it("should update master switch successfully", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/auto-approve/enabled",
+				body: { enabled: true },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({ success: true })
+			expect(mockClineApi.sidebarProvider.updateGlobalState).toHaveBeenCalledWith("autoApprovalEnabled", true)
+			expect(mockClineApi.sidebarProvider.postStateToWebview).toHaveBeenCalled()
+		})
+
+		it("should validate enabled field is boolean", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/auto-approve/enabled",
+				body: { enabled: "not a boolean" },
+			})
+
+			expect(response.status).toBe(400)
+			expect(response.body.error).toBe("enabled must be a boolean")
+		})
+
+		it("should handle errors", async () => {
+			mockClineApi.sidebarProvider.updateGlobalState = jest.fn().mockRejectedValue(new Error("test error"))
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/auto-approve/enabled",
+				body: { enabled: true },
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to update auto-approve enabled setting")
+		})
+	})
 })

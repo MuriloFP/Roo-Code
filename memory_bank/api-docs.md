@@ -310,6 +310,89 @@ Switch to a different mode.
 }
 ```
 
+### Auto-Approve Settings
+
+#### GET /api/auto-approve
+
+Get current auto-approve settings.
+
+**Response**
+
+```json
+{
+    "autoApprovalEnabled": boolean,
+    "alwaysAllowReadOnly": boolean,
+    "alwaysAllowWrite": boolean,
+    "alwaysAllowExecute": boolean,
+    "alwaysAllowBrowser": boolean,
+    "alwaysAllowMcp": boolean,
+    "alwaysApproveResubmit": boolean
+}
+```
+
+**Status Codes**
+
+- `200`: Success
+- `500`: Server error
+
+#### POST /api/auto-approve
+
+Update all auto-approve settings.
+
+**Request Body**
+
+```json
+{
+    "autoApprovalEnabled": boolean,
+    "alwaysAllowReadOnly": boolean,
+    "alwaysAllowWrite": boolean,
+    "alwaysAllowExecute": boolean,
+    "alwaysAllowBrowser": boolean,
+    "alwaysAllowMcp": boolean,
+    "alwaysApproveResubmit": boolean
+}
+```
+
+**Response**
+
+```json
+{
+	"success": true
+}
+```
+
+**Status Codes**
+
+- `200`: Success
+- `400`: Invalid request (non-boolean values)
+- `500`: Server error
+
+#### POST /api/auto-approve/enabled
+
+Update the master auto-approve switch.
+
+**Request Body**
+
+```json
+{
+    "enabled": boolean
+}
+```
+
+**Response**
+
+```json
+{
+	"success": true
+}
+```
+
+**Status Codes**
+
+- `200`: Success
+- `400`: Invalid request (non-boolean value)
+- `500`: Server error
+
 ### Profiles
 
 #### GET /api/profiles

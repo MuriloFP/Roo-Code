@@ -52,11 +52,15 @@
     - GET /api/tasks/status & GET /api/tasks/:id/status: Task status retrieval
     - GET /api/tasks/logs & GET /api/tasks/:id/logs: Conversation history
 - Message sending (POST)
+- Auto-approve settings (Complete):
+    - GET /api/auto-approve: Get current settings
+    - POST /api/auto-approve: Update all settings
+    - POST /api/auto-approve/enabled: Toggle master switch
 
 ### Testing
 
-- Comprehensive test coverage (49 passing tests)
-- Tests for all API endpoints
+- Comprehensive test coverage (61 passing tests)
+- Tests for all API endpoints including auto-approve
 - Error handling test cases
 - Mock implementations for ClineAPI and file system operations
 
@@ -82,25 +86,11 @@
 
 ## In Progress
 
-### Auto-Approve Settings
-
-- Planning implementation of auto-approve management endpoints:
-    - GET /api/auto-approve: Retrieve current settings
-    - POST /api/auto-approve/settings: Update settings
-    - POST /api/auto-approve/toggle: Enable/disable auto-approve
-
-### Task Status Tracking (High Priority)
-
-- [ ] Design task status endpoints
-- [ ] Implement GET /api/tasks/:id/status
-- [ ] Implement GET /api/tasks/:id/logs
-- [ ] Add WebSocket support planning
-
-### Enhanced Task Creation (High Priority)
+### Task Enhancement (High Priority)
 
 - [ ] Extend POST /api/tasks endpoint:
-    - [ ] Add mode selection
-    - [ ] Add profile selection
+    - [ ] Add additional parameters
+    - [ ] Consider streaming response implementation
     - [ ] Add timeout parameter
     - [ ] Add auto-approve toggle
     - [ ] Add wait-for-completion response
@@ -114,38 +104,19 @@
 
 ## Next Steps
 
-1. Implement Auto-Approve endpoints:
+1. Task Enhancement Implementation:
 
-    - Design response format for settings
-    - Implement endpoints
+    - Design new parameters for task creation
+    - Research and plan streaming response implementation
+    - Update request validation
+    - Implement timeout handling
     - Add comprehensive tests
     - Update documentation
 
-2. Task Status Implementation
-
-    - Design status tracking system
-    - Implement status endpoints
-    - Add conversation logging
-    - Plan WebSocket integration
-
-3. Task Creation Enhancement
-
-    - Update request validation
-    - Implement timeout handling
-    - Add profile and mode validation
-    - Integrate auto-approve logic
-
-4. Testing Expansion
-
-    - Add tests for new task endpoints
-    - Test timeout functionality
-    - Test status tracking
-    - Test enhanced task creation
-
-5. Implement WebSocket support for real-time updates
-6. Add rate limiting and authentication
-7. Enhance error messages with more details
-8. Clean up duplicate mock files
+2. Implement WebSocket support for real-time updates
+3. Add rate limiting and authentication
+4. Enhance error messages with more details
+5. Clean up duplicate mock files
 
 ## Known Issues
 
