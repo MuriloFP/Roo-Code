@@ -64,3 +64,46 @@ The external API integration follows these key architectural patterns:
     - Commands and events
     - Window management
     - Extension lifecycle
+
+## External API Architecture
+
+### Server Implementation
+
+- Uses Express.js for HTTP server
+- RESTful API design with JSON request/response format
+- Stateless request handling
+- CORS middleware for security
+- Configuration through VSCode settings
+
+### Key Components
+
+1. `ExternalApiServer` class
+
+    - Manages server lifecycle (start/stop)
+    - Handles route setup and middleware
+    - Integrates with ClineAPI for RooCode operations
+
+2. Configuration
+
+    - Port number (default: 3000)
+    - Allowed origins for CORS
+    - Enable/disable through VSCode settings
+
+3. API Endpoints
+
+    - GET /api/instructions
+    - POST /api/instructions
+    - POST /api/tasks
+    - POST /api/messages
+
+4. Error Handling
+    - Consistent error response format
+    - HTTP status codes for different scenarios
+    - Input validation for all endpoints
+
+### Testing
+
+- Comprehensive test suite using Jest
+- Tests for CORS, validation, and error handling
+- Server lifecycle management tests
+- Mock ClineAPI for isolated testing

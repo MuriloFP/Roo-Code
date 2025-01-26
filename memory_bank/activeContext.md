@@ -1,40 +1,46 @@
-# Current Work Status
+# Current Work: External API Expansion
 
-## What We're Working On
+## Current Focus
 
-- Implementing an external HTTP API for RooCode
-- Adding settings UI for API control
-- Designing secure communication between MCPs and RooCode
+We are expanding the RooCode External API to include comprehensive endpoint coverage for all major RooCode features. The initial implementation of basic endpoints (instructions and simple task management) is complete, and we are now planning the implementation of additional endpoints.
 
 ## Recent Changes
 
-- Identified key RooCode components for API integration:
-    - `ClineProvider.ts`: Main UI and task management
-    - `extension.ts`: Extension activation and command registration
-    - `exports/cline.d.ts`: API interface definitions
-    - `exports/index.ts`: API implementation
+1. Updated API documentation to clarify global vs mode-specific instructions
+2. Created comprehensive documentation for planned endpoints
+3. Established implementation tracking in progress.md
 
-## Next Steps
+## Current State
 
-1. Add External API Settings:
+- Basic API server is functional
+- Custom instructions endpoints are working
+- Basic task management is implemented
+- Documentation is being maintained
+- Implementation plan is tracked
 
-    - Add configuration in package.json
-    - Create UI controls in settings panel
-    - Implement settings persistence
+## Next Actions
 
-2. Create API Server:
+1. Begin implementing Mode Management endpoints (highest priority)
 
-    - Design HTTP endpoints
-    - Implement server class
-    - Add server lifecycle management
+    - GET /api/modes
+    - GET /api/modes/current
+    - POST /api/modes/switch
 
-3. Integrate with RooCode:
+2. Enhance task management with new features
+    - Extended configuration options
+    - Task status tracking
+    - Response streaming consideration
 
-    - Connect to ClineProvider
-    - Handle API requests
-    - Manage server instances
+## Open Questions
 
-4. Documentation:
-    - API endpoint documentation
-    - Setup instructions
-    - Security considerations
+1. Should we implement authentication for the API?
+2. How should we handle rate limiting?
+3. What's the best approach for streaming task responses?
+4. Should we implement WebSocket support for real-time updates?
+
+## Implementation Notes
+
+- Keep maintaining documentation as we implement new endpoints
+- Focus on proper error handling for each new endpoint
+- Consider backward compatibility
+- Ensure proper testing coverage

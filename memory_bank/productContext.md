@@ -21,3 +21,26 @@ RooCode is a powerful VSCode extension that provides AI-powered coding assistanc
     - Manage conversation context
     - Access other RooCode features
 4. The API maintains RooCode's security model and user control
+
+## External API Feature
+
+The External API feature enables programmatic control of RooCode through a REST API, allowing external applications to:
+
+- Start new tasks and send messages
+- Get and set custom instructions
+- Interact with RooCode from any programming language that can make HTTP requests
+
+### Key Requirements
+
+1. Enable/disable API server through VSCode settings
+2. Run independent API server per VSCode window
+3. Support HTTP requests for task creation and message sending
+4. Maintain security through CORS and allowed origins
+5. Provide clear error handling and response formats
+
+### User Benefits
+
+- Automate RooCode interactions
+- Integrate RooCode with other tools and workflows
+- Access RooCode features from external scripts and applications
+- Control RooCode programmatically from any language

@@ -48,3 +48,171 @@ Current Phase: Planning & Initial Implementation
 - [ ] Integration testing
 - [ ] Documentation
 - [ ] Release preparation
+
+## External API Feature Progress
+
+### Completed
+
+1. Core server implementation
+
+    - Express.js server setup
+    - API endpoints implementation
+    - CORS security middleware
+    - Error handling and validation
+
+2. Configuration
+
+    - VSCode settings integration
+    - Port configuration
+    - CORS allowed hosts setting
+
+3. Testing
+
+    - Unit tests for all endpoints
+    - CORS validation tests
+    - Error handling tests
+    - Server lifecycle tests
+
+4. Documentation
+    - API documentation with examples
+    - Configuration guide
+    - Best practices guide
+    - Example Python client
+
+### In Progress
+
+1. Syncing with upstream changes
+2. Preparing for pull request
+3. Additional testing with real-world scenarios
+
+### Next Steps
+
+1. Add rate limiting
+2. Enhance error messages
+3. Add more client examples
+4. Add authentication (if needed)
+5. Improve logging
+
+# RooCode External API Implementation Progress
+
+## Completed Features
+
+- Basic API server setup with Express.js
+- CORS security and configuration
+- Custom Instructions endpoints
+    - GET /api/instructions (retrieves combined instructions)
+    - POST /api/instructions (sets global instructions)
+- Basic task management
+    - POST /api/tasks (basic task creation)
+    - POST /api/messages (send messages to current task)
+
+## In Progress
+
+- Documentation updates
+    - ✓ API endpoint documentation
+    - ✓ Clear distinction between global and mode-specific instructions
+    - Endpoint examples and error handling documentation
+
+## Planned Features
+
+### 1. Mode Management (Priority: High)
+
+- [ ] GET /api/modes
+    - List all available modes
+    - Include mode details (slug, name, role, instructions, groups)
+- [ ] GET /api/modes/current
+    - Get active mode information
+- [ ] POST /api/modes/switch
+    - Switch between modes
+    - Validate mode existence
+    - Handle mode switching errors
+
+### 2. Profile Management (Priority: Medium)
+
+- [ ] GET /api/profiles
+    - List all configuration profiles
+    - Include profile details
+- [ ] GET /api/profiles/current
+    - Get active profile configuration
+- [ ] POST /api/profiles/switch
+    - Switch between profiles
+    - Validate profile existence
+    - Handle configuration loading
+
+### 3. Enhanced Task Management (Priority: High)
+
+- [ ] Extend POST /api/tasks
+    - Add mode selection
+    - Add model selection
+    - Add custom prompt support
+    - Add wait_for_completion option
+    - Add auto_approve option
+- [ ] GET /api/tasks/current/status
+    - Track task completion status
+    - Handle approval requirements
+- [ ] GET /api/tasks/current/log
+    - Implement conversation logging
+    - Include timestamps and message types
+- [ ] GET /api/tasks/:taskId/log
+    - Access historical task logs
+- [ ] GET /api/tasks
+    - List task history
+    - Implement task indexing
+    - Include conversation previews
+
+### 4. MCP Management (Priority: Medium)
+
+- [ ] GET /api/mcps
+    - List available MCPs
+    - Include status information
+- [ ] POST /api/mcps/:mcpId/toggle
+    - Enable/disable MCPs
+    - Handle MCP state changes
+
+## Technical Considerations
+
+### Task Response Handling
+
+1. Implement response streaming
+2. Design approval workflow
+3. Handle task state management
+4. Implement proper error handling
+
+### Security Considerations
+
+1. Validate all inputs
+2. Implement rate limiting
+3. Consider authentication options
+4. Handle sensitive configuration data
+
+### Testing Requirements
+
+1. Unit tests for each endpoint
+2. Integration tests for workflows
+3. Error handling tests
+4. Performance testing
+
+## Next Steps
+
+1. **Immediate Actions**
+
+    - Start with Mode Management endpoints
+    - Extend task creation endpoint
+    - Implement task status tracking
+
+2. **Technical Infrastructure**
+
+    - Set up response streaming
+    - Implement task state management
+    - Add proper error handling
+
+3. **Documentation**
+
+    - Add examples for each endpoint
+    - Document error scenarios
+    - Create usage guides
+
+4. **Testing**
+    - Create test plan
+    - Write unit tests
+    - Set up integration testing
