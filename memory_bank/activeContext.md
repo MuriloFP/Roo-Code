@@ -1,42 +1,69 @@
 # Current Work: External API Expansion
 
-## Current Focus: External API Feature
+## Current Focus: Enhanced Task Management
 
 ### Recent Changes
 
-- Implemented all core API endpoints
+- Completed all mode management endpoints with full test coverage:
+    - GET /api/modes (lists built-in and custom modes)
+    - GET /api/modes/current (retrieves active mode)
+    - POST /api/modes/switch (handles mode switching)
+- Fixed response formats and validation messages
 - Added comprehensive test suite with 28 passing tests
-- Fixed response format issues in GET /api/modes/current
-- Improved error handling and validation messages
-- Implemented mode switching functionality
+- Improved error handling across all endpoints
 
 ### Current Status
 
-- All planned endpoints are implemented and tested
+- Mode Management feature is complete and tested
+- Core API endpoints are stable and working
 - CORS security is properly configured
-- Error handling is consistent across all endpoints
-- Input validation is thorough and user-friendly
+- Input validation is thorough
+- Test coverage is comprehensive for existing features
 
 ### Next Actions
 
-1. Create pull request for the external API feature
-2. Add rate limiting to prevent API abuse
-3. Enhance logging system for better debugging
-4. Add more examples to API documentation
+1. Enhance POST /api/tasks endpoint with new features:
+    - Mode selection
+    - Model selection
+    - Custom prompt support
+    - wait_for_completion option
+    - auto_approve option
+2. Implement task status tracking (GET /api/tasks/current/status)
+3. Add conversation logging (GET /api/tasks/current/log)
 
 ### Open Questions
 
-1. Should we add authentication for sensitive operations?
-2. What rate limits would be appropriate for different endpoints?
-3. Should we add versioning to the API endpoints?
+1. How should we handle task state persistence between sessions?
+2. What's the best approach for implementing wait_for_completion?
+3. Should auto_approve be limited to specific modes or users?
+4. How should we structure the conversation logs?
 
 ### Implementation Notes
 
-- Using Express.js for the HTTP server
-- Custom CORS middleware instead of cors package
-- Consistent error response format across all endpoints
-- Mode switching validates mode existence before attempting switch
-- All endpoints return appropriate HTTP status codes
+- Need to extend ClineAPI interface for new task options
+- Consider using event emitters for task status updates
+- Plan to implement proper state management for tasks
+- Will need to track task history and conversation logs
+- Consider implementing a task queue for better management
+
+## Technical Considerations
+
+1. Task State Management
+
+    - Track task status
+    - Handle session persistence
+    - Manage task history
+
+2. Response Handling
+
+    - Implement completion waiting
+    - Handle streaming responses
+    - Manage task approvals
+
+3. Error Scenarios
+    - Task creation failures
+    - Status tracking errors
+    - Log retrieval issues
 
 ## Current State
 
