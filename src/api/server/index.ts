@@ -4,6 +4,8 @@ import { ClineAPI } from "../../exports"
 import * as vscode from "vscode"
 import { Mode, modes, getModeBySlug } from "../../shared/modes"
 import { ModeConfig } from "../../shared/modes"
+import * as fs from "fs/promises"
+import { HistoryItem } from "../../shared/HistoryItem"
 
 /**
  * Configuration options for the external API server
@@ -75,6 +77,11 @@ export class ExternalApiServer {
 	 * - GET /api/profiles: Get all available profiles
 	 * - GET /api/profiles/current: Get current profile
 	 * - POST /api/profiles/switch: Switch to a specified profile
+	 * - GET /api/tasks/status: Get task status for current task
+	 * - GET /api/tasks/:id/status: Get task status for a specific task
+	 * - GET /api/tasks/logs: Get task logs for current task
+	 * - GET /api/tasks/:id/logs: Get task logs for a specific task
+	 * - GET /api/tasks: List tasks with pagination, sorting by recency, and including task metadata
 	 */
 	private setupRoutes(): void {
 		// Get custom instructions
@@ -263,6 +270,127 @@ export class ExternalApiServer {
 			} catch (error) {
 				console.error("Error sending message:", error)
 				return res.status(500).json({ error: "Failed to send message" })
+			}
+		})
+
+		// Get task status
+		this.app.get("/api/tasks/status", async (req, res) => {
+			try {
+				const taskHistory =
+					((await this.clineApi.sidebarProvider.getGlobalState("taskHistory")) as
+						| HistoryItem[]
+						| undefined) || []
+				if (taskHistory.length === 0) {
+					return res.status(404).json({ error: "No active task found" })
+				}
+				const currentTaskId = taskHistory[taskHistory.length - 1].id
+				const taskData = await this.clineApi.sidebarProvider.getTaskWithId(currentTaskId)
+				const uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
+				const lastMessage = uiMessages[uiMessages.length - 1]
+
+				return res.json({
+					id: currentTaskId,
+					status: lastMessage?.type === "user" ? "waiting_for_response" : "waiting_for_approval",
+					lastMessage: lastMessage?.content || null,
+				})
+			} catch (error) {
+				console.error("Error getting task status:", error)
+				return res.status(500).json({ error: "Failed to get task status" })
+			}
+		})
+
+		this.app.get("/api/tasks/:id/status", async (req, res) => {
+			try {
+				const taskData = await this.clineApi.sidebarProvider.getTaskWithId(req.params.id)
+				const uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
+				const lastMessage = uiMessages[uiMessages.length - 1]
+
+				return res.json({
+					id: req.params.id,
+					status: lastMessage?.type === "user" ? "waiting_for_response" : "waiting_for_approval",
+					lastMessage: lastMessage?.content || null,
+				})
+			} catch (error) {
+				if (error instanceof Error && error.message === "Task not found") {
+					return res.status(404).json({ error: "Task not found" })
+				}
+				console.error("Error getting task status:", error)
+				return res.status(500).json({ error: "Failed to get task status" })
+			}
+		})
+
+		// Get task logs
+		this.app.get("/api/tasks/logs", async (req, res) => {
+			try {
+				const taskHistory =
+					((await this.clineApi.sidebarProvider.getGlobalState("taskHistory")) as
+						| HistoryItem[]
+						| undefined) || []
+				if (taskHistory.length === 0) {
+					return res.status(404).json({ error: "No active task found" })
+				}
+				const currentTaskId = taskHistory[taskHistory.length - 1].id
+				const taskData = await this.clineApi.sidebarProvider.getTaskWithId(currentTaskId)
+				const uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
+				const apiConversation = JSON.parse(await fs.readFile(taskData.apiConversationHistoryFilePath, "utf8"))
+
+				return res.json({
+					id: currentTaskId,
+					messages: uiMessages,
+					apiConversation,
+				})
+			} catch (error) {
+				console.error("Error getting task logs:", error)
+				return res.status(500).json({ error: "Failed to get task logs" })
+			}
+		})
+
+		this.app.get("/api/tasks/:id/logs", async (req, res) => {
+			try {
+				const taskData = await this.clineApi.sidebarProvider.getTaskWithId(req.params.id)
+				const uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
+				const apiConversation = JSON.parse(await fs.readFile(taskData.apiConversationHistoryFilePath, "utf8"))
+
+				return res.json({
+					id: req.params.id,
+					messages: uiMessages,
+					apiConversation,
+				})
+			} catch (error) {
+				if (error instanceof Error && error.message === "Task not found") {
+					return res.status(404).json({ error: "Task not found" })
+				}
+				console.error("Error getting task logs:", error)
+				return res.status(500).json({ error: "Failed to get task logs" })
+			}
+		})
+
+		// List tasks
+		this.app.get("/api/tasks", async (req: Request, res: Response) => {
+			try {
+				const limit = parseInt(req.query.limit as string) || 10
+				const taskHistory =
+					((await this.clineApi.sidebarProvider.getGlobalState("taskHistory")) as
+						| HistoryItem[]
+						| undefined) || []
+
+				// Sort by timestamp descending and limit results
+				const tasks = taskHistory
+					.sort((a, b) => b.ts - a.ts)
+					.slice(0, limit)
+					.map((item) => ({
+						id: item.id,
+						message: item.task,
+						timestamp: item.ts,
+						tokensIn: item.tokensIn,
+						tokensOut: item.tokensOut,
+						cost: item.totalCost,
+					}))
+
+				return res.json(tasks)
+			} catch (error) {
+				console.error("Error listing tasks:", error)
+				return res.status(500).json({ error: "Failed to list tasks" })
 			}
 		})
 	}

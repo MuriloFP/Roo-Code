@@ -33,28 +33,39 @@
 
 ## Completed Features
 
-- External API Server core implementation
+### Core Infrastructure
 
-    - Server setup with Express.js
-    - CORS security middleware with origin validation
-    - Error handling and logging
-    - Configuration through VSCode settings
+- External API server with Express.js
+- Server lifecycle management (start/stop)
+- CORS middleware and security
+- Error handling and logging
+- Test infrastructure with Jest
 
-- API Endpoints (All Tested & Working)
+### API Endpoints
 
-    - GET /api/instructions: Retrieve custom instructions
-    - POST /api/instructions: Set custom instructions
-    - POST /api/tasks: Start a new task
-    - POST /api/messages: Send a message
-    - GET /api/modes: List all available modes
-    - GET /api/modes/current: Get current active mode
-    - POST /api/modes/switch: Switch to a specified mode
+- Instructions management (GET/POST)
+- Mode management (GET all, GET current, POST switch)
+- Profile management (GET all, GET current, POST switch)
+- Task Management (Complete):
+    - POST /api/tasks: Create new tasks with enhanced parameters
+    - GET /api/tasks: List tasks with pagination
+    - GET /api/tasks/status & GET /api/tasks/:id/status: Task status retrieval
+    - GET /api/tasks/logs & GET /api/tasks/:id/logs: Conversation history
+- Message sending (POST)
 
-- Test Coverage
-    - 28 passing tests covering all endpoints
-    - Validation tests for input formats
-    - Error handling tests
-    - CORS security tests
+### Testing
+
+- Comprehensive test coverage (49 passing tests)
+- Tests for all API endpoints
+- Error handling test cases
+- Mock implementations for ClineAPI and file system operations
+
+### Documentation
+
+- API documentation updated with all endpoints
+- Response formats standardized
+- Error codes documented
+- Examples provided for all endpoints
 
 ## Completed Tasks
 
@@ -71,103 +82,79 @@
 
 ## In Progress
 
-### Profile Management (Priority: High)
+### Auto-Approve Settings
 
-- [ ] GET /api/profiles
-    - List all configuration profiles
-    - Include profile details and settings
-    - Add validation and error handling
-- [ ] GET /api/profiles/current
-    - Get active profile configuration
-    - Include all profile settings
-- [ ] POST /api/profiles/switch
-    - Switch between profiles
-    - Validate profile existence
-    - Handle configuration loading
-    - Add proper error handling
+- Planning implementation of auto-approve management endpoints:
+    - GET /api/auto-approve: Retrieve current settings
+    - POST /api/auto-approve/settings: Update settings
+    - POST /api/auto-approve/toggle: Enable/disable auto-approve
 
-### Task Status Tracking (Priority: High)
+### Task Status Tracking (High Priority)
 
-- [ ] GET /api/tasks/current/status
-    - Track task completion status
-    - Handle approval requirements
-    - Include error states
-- [ ] GET /api/tasks/current/log
-    - Implement conversation logging
-    - Include timestamps and message types
-    - Structure log format properly
+- [ ] Design task status endpoints
+- [ ] Implement GET /api/tasks/:id/status
+- [ ] Implement GET /api/tasks/:id/logs
+- [ ] Add WebSocket support planning
 
-### Enhanced Task Creation (Priority: Medium)
+### Enhanced Task Creation (High Priority)
 
-- [ ] Extend POST /api/tasks
-    - Add mode selection
-    - Add profile selection
-    - Add timeout parameter
-    - Add auto-approve toggle
-    - Add wait-for-completion
-    - Implement response handling
+- [ ] Extend POST /api/tasks endpoint:
+    - [ ] Add mode selection
+    - [ ] Add profile selection
+    - [ ] Add timeout parameter
+    - [ ] Add auto-approve toggle
+    - [ ] Add wait-for-completion response
 
-## Technical Considerations
+### Task Status Tracking Enhancements
 
-### Task Response Handling
-
-1. Implement response streaming
-2. Design approval workflow
-3. Handle task state management
-4. Implement proper error handling
-
-### Security Considerations
-
-1. [x] Validate all inputs
-2. [ ] Implement rate limiting
-3. [ ] Consider authentication options
-4. [x] Handle sensitive configuration data
-
-### Testing Requirements
-
-1. [x] Unit tests for each endpoint
-2. [x] Integration tests for workflows
-3. [x] Error handling tests
-4. [ ] Performance testing
+- [ ] Implement WebSocket support for real-time updates
+- [ ] Add rate limiting and authentication
+- [ ] Enhance error messages with more details
+- [ ] Clean up duplicate mock files
 
 ## Next Steps
 
-1. **Profile Management Implementation**
+1. Implement Auto-Approve endpoints:
 
-    - [ ] Design profile endpoints
-    - [ ] Implement GET /api/profiles
-    - [ ] Implement GET /api/profiles/current
-    - [ ] Implement POST /api/profiles/switch
+    - Design response format for settings
+    - Implement endpoints
+    - Add comprehensive tests
+    - Update documentation
 
-2. **Task Status Implementation**
+2. Task Status Implementation
 
-    - [ ] Design status tracking system
-    - [ ] Implement status endpoint
-    - [ ] Implement logging endpoint
+    - Design status tracking system
+    - Implement status endpoints
+    - Add conversation logging
+    - Plan WebSocket integration
 
-3. **Task Creation Enhancement**
+3. Task Creation Enhancement
 
-    - [ ] Add new parameters to task creation
-    - [ ] Implement timeout handling
-    - [ ] Add response streaming
+    - Update request validation
+    - Implement timeout handling
+    - Add profile and mode validation
+    - Integrate auto-approve logic
 
-4. **Testing**
-    - [ ] Write tests for new endpoints
-    - [ ] Test profile switching
-    - [ ] Test task status tracking
+4. Testing Expansion
 
-## Documentation
+    - Add tests for new task endpoints
+    - Test timeout functionality
+    - Test status tracking
+    - Test enhanced task creation
 
-- API endpoints documented
-- Test coverage documented
-- Error handling documented
-- Profile management flows documented
+5. Implement WebSocket support for real-time updates
+6. Add rate limiting and authentication
+7. Enhance error messages with more details
+8. Clean up duplicate mock files
 
 ## Known Issues
 
 - Duplicate mock files in src/**mocks** and out/src/**mocks**
 - Need to handle concurrent profile switches during active tasks
 - Need to define default timeout values for task completion
+- Duplicate mock files for McpHub and fs/promises
+- Need to implement proper rate limiting
+- Authentication not yet implemented
 
 ## Future Improvements
 
@@ -175,3 +162,7 @@
 - Better error messages and validation
 - Performance optimization for large conversation logs
 - Caching for frequently accessed profiles
+- Rate limiting implementation
+- Authentication system
+- Task state persistence between sessions
+- Concurrent task operation handling

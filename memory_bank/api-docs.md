@@ -100,6 +100,127 @@ Start a new task.
 }
 ```
 
+#### GET /api/tasks
+
+List tasks with pagination.
+
+**Query Parameters**
+
+- `limit` (optional): Maximum number of tasks to return (default: 10)
+
+**Response**
+
+```json
+[
+	{
+		"id": "task-123",
+		"message": "Initial task message",
+		"timestamp": 1234567890,
+		"tokensIn": 100,
+		"tokensOut": 150,
+		"cost": 0.002
+	}
+]
+```
+
+**Notes**
+
+- Tasks are sorted by timestamp in descending order (newest first)
+- Cost is in USD
+
+#### GET /api/tasks/status
+
+Get the status of the current task.
+
+**Response**
+
+```json
+{
+	"id": "task-123",
+	"status": "waiting_for_response",
+	"lastMessage": "Last message content"
+}
+```
+
+Status values:
+
+- `waiting_for_response`: Waiting for AI response
+- `waiting_for_approval`: Waiting for user to approve action
+- `completed`: Task is finished
+- `error`: Task encountered an error
+
+**Status Codes**
+
+- `200`: Success
+- `404`: No active task found
+- `500`: Server error
+
+#### GET /api/tasks/:id/status
+
+Get the status of a specific task by ID.
+
+**Parameters**
+
+- `id` (path): The unique identifier of the task
+
+**Response**
+Same format as `GET /api/tasks/status`
+
+**Status Codes**
+
+- `200`: Success
+- `404`: Task not found
+- `500`: Server error
+
+#### GET /api/tasks/logs
+
+Get conversation logs for the current task.
+
+**Response**
+
+```json
+{
+	"id": "task-123",
+	"messages": [
+		{
+			"type": "user",
+			"content": "User message"
+		},
+		{
+			"type": "assistant",
+			"content": "Assistant response"
+		}
+	],
+	"apiConversation": [
+		{
+			"role": "user",
+			"content": "API message"
+		},
+		{
+			"role": "assistant",
+			"content": "API response"
+		}
+	]
+}
+```
+
+#### GET /api/tasks/:id/logs
+
+Get conversation logs for a specific task.
+
+**Parameters**
+
+- `id` (path): The unique identifier of the task
+
+**Response**
+Same format as `GET /api/tasks/logs`
+
+**Status Codes**
+
+- `200`: Success
+- `404`: Task not found
+- `500`: Server error
+
 ### Messages
 
 #### POST /api/messages

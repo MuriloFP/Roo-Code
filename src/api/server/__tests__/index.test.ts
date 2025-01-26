@@ -3,8 +3,10 @@ import { ClineAPI } from "../../../exports"
 import * as http from "http"
 import { modes, ModeConfig, getModeBySlug } from "../../../shared/modes"
 import delay from "delay"
+import * as fs from "fs/promises"
 
 jest.mock("../../../exports")
+jest.mock("fs/promises")
 
 // Helper function to get a random port number between 3001-4000
 function getRandomPort(): number {
@@ -715,6 +717,385 @@ describe("ExternalApiServer", () => {
 
 			expect(response.status).toBe(500)
 			expect(response.body.error).toBe("Failed to check config")
+		})
+	})
+
+	describe("GET /api/tasks/status", () => {
+		beforeEach(() => {
+			// Mock the task history and data
+			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockResolvedValue([
+				{ id: "task-1", ts: 1000 },
+				{ id: "task-2", ts: 2000 },
+			])
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockResolvedValue({
+				historyItem: { id: "task-2" },
+				uiMessagesFilePath: "/test/path/messages.json",
+			})
+			;(fs.readFile as jest.Mock).mockResolvedValue(
+				JSON.stringify([
+					{ type: "assistant", content: "Hello" },
+					{ type: "user", content: "Hi" },
+				]),
+			)
+		})
+
+		it("should return current task status successfully", async () => {
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks/status",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({
+				id: "task-2",
+				status: "waiting_for_response",
+				lastMessage: "Hi",
+			})
+			expect(mockClineApi.sidebarProvider.getGlobalState).toHaveBeenCalledWith("taskHistory")
+			expect(mockClineApi.sidebarProvider.getTaskWithId).toHaveBeenCalledWith("task-2")
+		})
+
+		it("should return 404 when no tasks exist", async () => {
+			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockResolvedValue([])
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks/status",
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("No active task found")
+		})
+
+		it("should handle errors", async () => {
+			mockClineApi.sidebarProvider.getGlobalState = jest
+				.fn()
+				.mockRejectedValue(new Error("Failed to get task history"))
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks/status",
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to get task status")
+		})
+	})
+
+	describe("GET /api/tasks/:id/status", () => {
+		beforeEach(() => {
+			// Mock the task data
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockResolvedValue({
+				historyItem: { id: "test-task-id" },
+				uiMessagesFilePath: "/test/path/messages.json",
+			})
+			;(fs.readFile as jest.Mock).mockResolvedValue(
+				JSON.stringify([
+					{ type: "assistant", content: "Hello" },
+					{ type: "user", content: "Hi" },
+				]),
+			)
+		})
+
+		it("should return task status successfully", async () => {
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks/test-task-id/status",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({
+				id: "test-task-id",
+				status: "waiting_for_response",
+				lastMessage: "Hi",
+			})
+			expect(mockClineApi.sidebarProvider.getTaskWithId).toHaveBeenCalledWith("test-task-id")
+		})
+
+		it("should return 404 when task is not found", async () => {
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockRejectedValue(new Error("Task not found"))
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks/non-existent-id/status",
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("Task not found")
+		})
+
+		it("should handle errors", async () => {
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockRejectedValue(new Error("Failed to get task"))
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks/test-task-id/status",
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to get task status")
+		})
+	})
+
+	describe("GET /api/tasks/logs", () => {
+		beforeEach(() => {
+			// Mock the task history and data
+			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockResolvedValue([
+				{ id: "task-1", ts: 1000 },
+				{ id: "task-2", ts: 2000 },
+			])
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockResolvedValue({
+				historyItem: { id: "task-2" },
+				uiMessagesFilePath: "/test/path/messages.json",
+				apiConversationHistoryFilePath: "/test/path/api_conversation.json",
+			})
+			;(fs.readFile as jest.Mock).mockImplementation((path: string) => {
+				if (path.endsWith("messages.json")) {
+					return Promise.resolve(
+						JSON.stringify([
+							{ type: "assistant", content: "Hello" },
+							{ type: "user", content: "Hi" },
+						]),
+					)
+				}
+				if (path.endsWith("api_conversation.json")) {
+					return Promise.resolve(
+						JSON.stringify([
+							{ role: "assistant", content: "API Hello" },
+							{ role: "user", content: "API Hi" },
+						]),
+					)
+				}
+				return Promise.reject(new Error("File not found"))
+			})
+		})
+
+		it("should return current task logs successfully", async () => {
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks/logs",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({
+				id: "task-2",
+				messages: [
+					{ type: "assistant", content: "Hello" },
+					{ type: "user", content: "Hi" },
+				],
+				apiConversation: [
+					{ role: "assistant", content: "API Hello" },
+					{ role: "user", content: "API Hi" },
+				],
+			})
+			expect(mockClineApi.sidebarProvider.getGlobalState).toHaveBeenCalledWith("taskHistory")
+			expect(mockClineApi.sidebarProvider.getTaskWithId).toHaveBeenCalledWith("task-2")
+		})
+
+		it("should return 404 when no tasks exist", async () => {
+			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockResolvedValue([])
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks/logs",
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("No active task found")
+		})
+
+		it("should handle errors", async () => {
+			mockClineApi.sidebarProvider.getGlobalState = jest
+				.fn()
+				.mockRejectedValue(new Error("Failed to get task history"))
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks/logs",
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to get task logs")
+		})
+	})
+
+	describe("GET /api/tasks/:id/logs", () => {
+		beforeEach(() => {
+			// Mock the task data
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockResolvedValue({
+				historyItem: { id: "test-task-id" },
+				uiMessagesFilePath: "/test/path/messages.json",
+				apiConversationHistoryFilePath: "/test/path/api_conversation.json",
+			})
+			;(fs.readFile as jest.Mock).mockImplementation((path: string) => {
+				if (path.endsWith("messages.json")) {
+					return Promise.resolve(
+						JSON.stringify([
+							{ type: "assistant", content: "Hello" },
+							{ type: "user", content: "Hi" },
+						]),
+					)
+				}
+				if (path.endsWith("api_conversation.json")) {
+					return Promise.resolve(
+						JSON.stringify([
+							{ role: "assistant", content: "API Hello" },
+							{ role: "user", content: "API Hi" },
+						]),
+					)
+				}
+				return Promise.reject(new Error("File not found"))
+			})
+		})
+
+		it("should return task logs successfully", async () => {
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks/test-task-id/logs",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({
+				id: "test-task-id",
+				messages: [
+					{ type: "assistant", content: "Hello" },
+					{ type: "user", content: "Hi" },
+				],
+				apiConversation: [
+					{ role: "assistant", content: "API Hello" },
+					{ role: "user", content: "API Hi" },
+				],
+			})
+			expect(mockClineApi.sidebarProvider.getTaskWithId).toHaveBeenCalledWith("test-task-id")
+		})
+
+		it("should return 404 when task is not found", async () => {
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockRejectedValue(new Error("Task not found"))
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks/non-existent-id/logs",
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("Task not found")
+		})
+
+		it("should handle errors", async () => {
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockRejectedValue(new Error("Failed to get task"))
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks/test-task-id/logs",
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to get task logs")
+		})
+	})
+
+	describe("GET /api/tasks", () => {
+		beforeEach(() => {
+			// Mock task history data
+			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockResolvedValue([
+				{
+					id: "task-1",
+					task: "First task",
+					ts: 1000,
+					tokensIn: 10,
+					tokensOut: 20,
+					totalCost: 0.001,
+				},
+				{
+					id: "task-2",
+					task: "Second task",
+					ts: 2000,
+					tokensIn: 15,
+					tokensOut: 25,
+					totalCost: 0.002,
+				},
+				{
+					id: "task-3",
+					task: "Third task",
+					ts: 3000,
+					tokensIn: 20,
+					tokensOut: 30,
+					totalCost: 0.003,
+				},
+			])
+		})
+
+		it("should return tasks successfully with default limit", async () => {
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toHaveLength(3)
+			expect(response.body[0]).toEqual({
+				id: "task-3",
+				message: "Third task",
+				timestamp: 3000,
+				tokensIn: 20,
+				tokensOut: 30,
+				cost: 0.003,
+			})
+			expect(mockClineApi.sidebarProvider.getGlobalState).toHaveBeenCalledWith("taskHistory")
+		})
+
+		it("should respect the limit parameter", async () => {
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks?limit=2",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toHaveLength(2)
+			expect(response.body[0].id).toBe("task-3")
+			expect(response.body[1].id).toBe("task-2")
+		})
+
+		it("should return empty array when no tasks exist", async () => {
+			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockResolvedValue([])
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual([])
+		})
+
+		it("should handle errors", async () => {
+			mockClineApi.sidebarProvider.getGlobalState = jest
+				.fn()
+				.mockRejectedValue(new Error("Failed to get task history"))
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/tasks",
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to list tasks")
 		})
 	})
 })
