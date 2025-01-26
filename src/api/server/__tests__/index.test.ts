@@ -551,4 +551,170 @@ describe("ExternalApiServer", () => {
 			await expect(testServer.start()).rejects.toThrow()
 		})
 	})
+
+	describe("GET /api/profiles", () => {
+		it("should return all profiles successfully", async () => {
+			const mockProfiles = [
+				{ name: "default", id: "default-id", apiProvider: "anthropic" },
+				{ name: "test", id: "test-id", apiProvider: "openai" },
+			]
+			mockClineApi.sidebarProvider.configManager = {
+				listConfig: jest.fn().mockResolvedValue(mockProfiles),
+			} as any
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/profiles",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual(mockProfiles)
+			expect(mockClineApi.sidebarProvider.configManager.listConfig).toHaveBeenCalled()
+		})
+
+		it("should handle errors", async () => {
+			mockClineApi.sidebarProvider.configManager = {
+				listConfig: jest.fn().mockRejectedValue(new Error("Failed to list configs")),
+			} as any
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/profiles",
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to list configs")
+		})
+	})
+
+	describe("GET /api/profiles/current", () => {
+		it("should return current profile successfully", async () => {
+			const currentProfile = {
+				name: "default",
+				id: "default-id",
+				apiProvider: "anthropic",
+			}
+			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockResolvedValue("default")
+			mockClineApi.sidebarProvider.configManager = {
+				loadConfig: jest.fn().mockResolvedValue({
+					id: "default-id",
+					apiProvider: "anthropic",
+				}),
+			} as any
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/profiles/current",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual(currentProfile)
+			expect(mockClineApi.sidebarProvider.getGlobalState).toHaveBeenCalledWith("currentApiConfigName")
+			expect(mockClineApi.sidebarProvider.configManager.loadConfig).toHaveBeenCalledWith("default")
+		})
+
+		it("should return 404 when no current profile is set", async () => {
+			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockResolvedValue(undefined)
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/profiles/current",
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("Current profile not found")
+		})
+
+		it("should handle errors", async () => {
+			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockRejectedValue(new Error("Failed to get state"))
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/profiles/current",
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to get state")
+		})
+	})
+
+	describe("POST /api/profiles/switch", () => {
+		beforeEach(() => {
+			mockClineApi.sidebarProvider.configManager = {
+				hasConfig: jest.fn<Promise<boolean>, [string]>().mockResolvedValue(true),
+				loadConfig: jest.fn().mockResolvedValue({
+					id: "test-id",
+					apiProvider: "anthropic",
+				}),
+				setCurrentConfig: jest.fn().mockResolvedValue(undefined),
+				listConfig: jest.fn().mockResolvedValue([{ name: "test", id: "test-id", apiProvider: "anthropic" }]),
+			} as any
+			mockClineApi.sidebarProvider.updateGlobalState = jest.fn().mockResolvedValue(undefined)
+			mockClineApi.sidebarProvider.postStateToWebview = jest.fn().mockResolvedValue(undefined)
+		})
+
+		it("should switch profile successfully", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/profiles/switch",
+				body: { name: "test" },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({ message: "Switched to profile 'test'" })
+			expect(mockClineApi.sidebarProvider.configManager.hasConfig).toHaveBeenCalledWith("test")
+			expect(mockClineApi.sidebarProvider.configManager.loadConfig).toHaveBeenCalledWith("test")
+			expect(mockClineApi.sidebarProvider.configManager.setCurrentConfig).toHaveBeenCalledWith("test")
+			expect(mockClineApi.sidebarProvider.updateGlobalState).toHaveBeenCalledWith("currentApiConfigName", "test")
+			expect(mockClineApi.sidebarProvider.postStateToWebview).toHaveBeenCalled()
+		})
+
+		it("should validate profile name", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/profiles/switch",
+				body: {},
+			})
+
+			expect(response.status).toBe(400)
+			expect(response.body.error).toBe("Profile name is required")
+		})
+
+		it("should return 404 when profile does not exist", async () => {
+			const hasConfig = mockClineApi.sidebarProvider.configManager.hasConfig as jest.Mock
+			hasConfig.mockResolvedValue(false)
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/profiles/switch",
+				body: { name: "non-existent" },
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("Profile 'non-existent' not found")
+		})
+
+		it("should handle errors", async () => {
+			const hasConfig = mockClineApi.sidebarProvider.configManager.hasConfig as jest.Mock
+			hasConfig.mockRejectedValue(new Error("Failed to check config"))
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/profiles/switch",
+				body: { name: "test" },
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to check config")
+		})
+	})
 })

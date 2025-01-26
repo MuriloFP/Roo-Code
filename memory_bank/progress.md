@@ -16,12 +16,13 @@
 - Request handlers implemented
 - Server lifecycle management working
 
-✓ RooCode Integration
+✓ Mode Management
 
-- ClineProvider connection established
-- Task creation implemented
-- Message handling working
-- Multi-window support tested
+- GET /api/modes endpoint complete
+- GET /api/modes/current endpoint complete
+- POST /api/modes/switch endpoint complete
+- Full test coverage implemented
+- Documentation updated
 
 ✓ Documentation
 
@@ -55,49 +56,56 @@
     - Error handling tests
     - CORS security tests
 
+## Completed Tasks
+
+- Initial API server setup with CORS and error handling
+- Basic endpoint implementation (GET/POST /api/instructions, /api/tasks, /api/messages)
+- Mode management endpoints (GET /api/modes, GET /api/modes/current, POST /api/modes/switch)
+- Profile management endpoints:
+    - GET /api/profiles: List all available profiles
+    - GET /api/profiles/current: Get current profile
+    - POST /api/profiles/switch: Switch between profiles
+- Full test coverage for all implemented endpoints (37 tests)
+- Integration with ConfigManager for profile operations
+- Error handling and input validation
+
 ## In Progress
 
-### Enhanced Task Management (Priority: High)
-
-- [ ] Extend POST /api/tasks
-    - Add mode selection
-    - Add model selection
-    - Add custom prompt support
-    - Add wait_for_completion option
-    - Add auto_approve option
-- [ ] GET /api/tasks/current/status
-    - Track task completion status
-    - Handle approval requirements
-- [ ] GET /api/tasks/current/log
-    - Implement conversation logging
-    - Include timestamps and message types
-- [ ] GET /api/tasks/:taskId/log
-    - Access historical task logs
-- [ ] GET /api/tasks
-    - List task history
-    - Implement task indexing
-    - Include conversation previews
-
-### Profile Management (Priority: Medium)
+### Profile Management (Priority: High)
 
 - [ ] GET /api/profiles
     - List all configuration profiles
-    - Include profile details
+    - Include profile details and settings
+    - Add validation and error handling
 - [ ] GET /api/profiles/current
     - Get active profile configuration
+    - Include all profile settings
 - [ ] POST /api/profiles/switch
     - Switch between profiles
     - Validate profile existence
     - Handle configuration loading
+    - Add proper error handling
 
-### MCP Management (Priority: Medium)
+### Task Status Tracking (Priority: High)
 
-- [ ] GET /api/mcps
-    - List available MCPs
-    - Include status information
-- [ ] POST /api/mcps/:mcpId/toggle
-    - Enable/disable MCPs
-    - Handle MCP state changes
+- [ ] GET /api/tasks/current/status
+    - Track task completion status
+    - Handle approval requirements
+    - Include error states
+- [ ] GET /api/tasks/current/log
+    - Implement conversation logging
+    - Include timestamps and message types
+    - Structure log format properly
+
+### Enhanced Task Creation (Priority: Medium)
+
+- [ ] Extend POST /api/tasks
+    - Add mode selection
+    - Add profile selection
+    - Add timeout parameter
+    - Add auto-approve toggle
+    - Add wait-for-completion
+    - Implement response handling
 
 ## Technical Considerations
 
@@ -124,25 +132,46 @@
 
 ## Next Steps
 
-1. **Task Management Enhancement**
+1. **Profile Management Implementation**
 
-    - [ ] Extend task creation endpoint
-    - [ ] Implement task status tracking
-    - [ ] Add conversation logging
+    - [ ] Design profile endpoints
+    - [ ] Implement GET /api/profiles
+    - [ ] Implement GET /api/profiles/current
+    - [ ] Implement POST /api/profiles/switch
 
-2. **Technical Infrastructure**
+2. **Task Status Implementation**
 
-    - [ ] Set up response streaming
-    - [ ] Implement task state management
-    - [ ] Add proper error handling
+    - [ ] Design status tracking system
+    - [ ] Implement status endpoint
+    - [ ] Implement logging endpoint
 
-3. **Documentation**
+3. **Task Creation Enhancement**
 
-    - [x] Add examples for each endpoint
-    - [x] Document error scenarios
-    - [ ] Create usage guides
+    - [ ] Add new parameters to task creation
+    - [ ] Implement timeout handling
+    - [ ] Add response streaming
 
 4. **Testing**
-    - [x] Create test plan
-    - [x] Write unit tests
-    - [x] Set up integration testing
+    - [ ] Write tests for new endpoints
+    - [ ] Test profile switching
+    - [ ] Test task status tracking
+
+## Documentation
+
+- API endpoints documented
+- Test coverage documented
+- Error handling documented
+- Profile management flows documented
+
+## Known Issues
+
+- Duplicate mock files in src/**mocks** and out/src/**mocks**
+- Need to handle concurrent profile switches during active tasks
+- Need to define default timeout values for task completion
+
+## Future Improvements
+
+- WebSocket support for real-time updates
+- Better error messages and validation
+- Performance optimization for large conversation logs
+- Caching for frequently accessed profiles

@@ -1,6 +1,6 @@
 # Current Work: External API Expansion
 
-## Current Focus: Enhanced Task Management
+## Current Focus: Profile Management and Task Status Tracking
 
 ### Recent Changes
 
@@ -11,6 +11,14 @@
 - Fixed response formats and validation messages
 - Added comprehensive test suite with 28 passing tests
 - Improved error handling across all endpoints
+- Revised implementation plan for better modularity
+- Implemented profile management endpoints:
+    - GET /api/profiles: List all available profiles
+    - GET /api/profiles/current: Get current profile
+    - POST /api/profiles/switch: Switch between profiles
+- Added comprehensive test coverage for all profile endpoints
+- Integrated with ConfigManager for profile operations
+- Added proper error handling and validation
 
 ### Current Status
 
@@ -19,17 +27,25 @@
 - CORS security is properly configured
 - Input validation is thorough
 - Test coverage is comprehensive for existing features
+- New implementation plan established
+- Profile management endpoints are fully implemented and tested
+- All tests passing (37 tests total)
+- API documentation is up to date
+- Error handling and validation in place
 
 ### Next Actions
 
-1. Enhance POST /api/tasks endpoint with new features:
-    - Mode selection
-    - Model selection
-    - Custom prompt support
-    - wait_for_completion option
-    - auto_approve option
-2. Implement task status tracking (GET /api/tasks/current/status)
-3. Add conversation logging (GET /api/tasks/current/log)
+1. Implement Task Status and Response endpoints:
+
+    - GET /api/tasks/:id/status
+    - GET /api/tasks/:id/logs
+
+2. Finally, enhance POST /api/tasks endpoint with:
+    - Mode selection (using existing endpoints)
+    - Profile selection (using new profile endpoints)
+    - Timeout parameter (default 5 minutes)
+    - Auto-approve toggle
+    - Wait-for-completion with response
 
 ### Open Questions
 
@@ -37,6 +53,9 @@
 2. What's the best approach for implementing wait_for_completion?
 3. Should auto_approve be limited to specific modes or users?
 4. How should we structure the conversation logs?
+5. Should we implement WebSocket support for real-time task status updates?
+6. What should be the default timeout value for task completion?
+7. How should we handle concurrent profile switches during active tasks?
 
 ### Implementation Notes
 

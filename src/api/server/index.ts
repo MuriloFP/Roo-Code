@@ -72,6 +72,9 @@ export class ExternalApiServer {
 	 * - GET /api/modes: Get all available modes
 	 * - GET /api/modes/current: Get current mode
 	 * - POST /api/modes/switch: Switch to a specified mode
+	 * - GET /api/profiles: Get all available profiles
+	 * - GET /api/profiles/current: Get current profile
+	 * - POST /api/profiles/switch: Switch to a specified profile
 	 */
 	private setupRoutes(): void {
 		// Get custom instructions
@@ -142,6 +145,91 @@ export class ExternalApiServer {
 			}
 		})
 
+		// Switch mode
+		this.app.post("/api/modes/switch", async (req: Request, res: Response) => {
+			try {
+				const { mode } = req.body
+				if (typeof mode !== "string") {
+					return res.status(400).json({ error: "Mode must be a string" })
+				}
+
+				const customModes = await this.clineApi.sidebarProvider.customModesManager.getCustomModes()
+				const modeConfig = getModeBySlug(mode, customModes)
+				if (!modeConfig) {
+					return res.status(404).json({ error: "Mode not found" })
+				}
+
+				await this.clineApi.sidebarProvider.handleModeSwitch(mode)
+				return res.json({ message: "Mode switched successfully" })
+			} catch (error) {
+				console.error("Error switching mode:", error)
+				return res.status(500).json({ error: "Failed to switch mode" })
+			}
+		})
+
+		// Get all profiles
+		this.app.get("/api/profiles", async (req, res) => {
+			try {
+				const profiles = await this.clineApi.sidebarProvider.configManager.listConfig()
+				return res.json(profiles)
+			} catch (error) {
+				return res.status(500).json({ error: error.message })
+			}
+		})
+
+		// Get current profile
+		this.app.get("/api/profiles/current", async (req, res) => {
+			try {
+				const currentApiConfigName = (await this.clineApi.sidebarProvider.getGlobalState(
+					"currentApiConfigName",
+				)) as string
+				if (!currentApiConfigName) {
+					return res.status(404).json({ error: "Current profile not found" })
+				}
+				const config = await this.clineApi.sidebarProvider.configManager.loadConfig(currentApiConfigName)
+				return res.json({
+					name: currentApiConfigName,
+					id: config.id,
+					apiProvider: config.apiProvider,
+				})
+			} catch (error) {
+				return res.status(500).json({ error: error.message })
+			}
+		})
+
+		// Switch profile
+		this.app.post("/api/profiles/switch", async (req, res) => {
+			try {
+				const { name } = req.body
+				if (!name) {
+					return res.status(400).json({ error: "Profile name is required" })
+				}
+
+				const hasProfile = await this.clineApi.sidebarProvider.configManager.hasConfig(name)
+				if (!hasProfile) {
+					return res.status(404).json({ error: `Profile '${name}' not found` })
+				}
+
+				// Load the config first to validate it
+				const config = await this.clineApi.sidebarProvider.configManager.loadConfig(name)
+
+				// Set it as current
+				await this.clineApi.sidebarProvider.configManager.setCurrentConfig(name)
+
+				// Update global state
+				await this.clineApi.sidebarProvider.updateGlobalState("currentApiConfigName", name)
+				const listApiConfigMeta = await this.clineApi.sidebarProvider.configManager.listConfig()
+				await this.clineApi.sidebarProvider.updateGlobalState("listApiConfigMeta", listApiConfigMeta)
+
+				// Update the API configuration
+				await this.clineApi.sidebarProvider.postStateToWebview()
+
+				return res.json({ message: `Switched to profile '${name}'` })
+			} catch (error) {
+				return res.status(500).json({ error: error.message })
+			}
+		})
+
 		// Start new task
 		this.app.post("/api/tasks", async (req: Request, res: Response) => {
 			try {
@@ -175,28 +263,6 @@ export class ExternalApiServer {
 			} catch (error) {
 				console.error("Error sending message:", error)
 				return res.status(500).json({ error: "Failed to send message" })
-			}
-		})
-
-		// Switch mode
-		this.app.post("/api/modes/switch", async (req: Request, res: Response) => {
-			try {
-				const { mode } = req.body
-				if (typeof mode !== "string") {
-					return res.status(400).json({ error: "Mode must be a string" })
-				}
-
-				const customModes = await this.clineApi.sidebarProvider.customModesManager.getCustomModes()
-				const modeConfig = getModeBySlug(mode, customModes)
-				if (!modeConfig) {
-					return res.status(404).json({ error: "Mode not found" })
-				}
-
-				await this.clineApi.sidebarProvider.handleModeSwitch(mode)
-				return res.json({ message: "Mode switched successfully" })
-			} catch (error) {
-				console.error("Error switching mode:", error)
-				return res.status(500).json({ error: "Failed to switch mode" })
 			}
 		})
 	}

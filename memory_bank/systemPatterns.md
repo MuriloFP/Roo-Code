@@ -124,3 +124,70 @@ The external API integration follows these key architectural patterns:
 - VSCode extension APIs
 - Custom modes manager
 - Sidebar provider
+
+## API Architecture
+
+### External API Server
+
+- Express-based HTTP server
+- CORS middleware for security
+- JSON request/response format
+- Error handling middleware
+- Modular endpoint organization
+
+### Profile Management
+
+- ConfigManager handles profile operations
+- Profiles stored securely using VSCode secrets
+- Profile switching updates global state
+- Profile metadata cached for performance
+- Proper validation and error handling
+
+### Mode Management
+
+- Built-in and custom modes supported
+- Mode switching through dedicated endpoints
+- Mode state persisted in global state
+- Mode validation before switching
+
+### Task Management
+
+- Asynchronous task processing
+- Support for images and messages
+- Error handling and validation
+- Future support for:
+    - Task status tracking
+    - Real-time updates
+    - Timeout handling
+    - Auto-approve settings
+
+## Testing Patterns
+
+- Jest test framework
+- Isolated test suites per endpoint
+- Mock ClineAPI for testing
+- Comprehensive error case coverage
+- Random port allocation for tests
+- Retry mechanism for flaky tests
+
+## Error Handling
+
+- Consistent error response format
+- HTTP status codes for different errors
+- Detailed error messages in development
+- Error logging for debugging
+- Graceful error recovery
+
+## State Management
+
+- Global state for current mode/profile
+- State updates through dedicated methods
+- State synchronization with webview
+- Proper cleanup on server shutdown
+
+## Security
+
+- CORS origin validation
+- Input validation on all endpoints
+- Secure profile storage
+- Protected configuration data
