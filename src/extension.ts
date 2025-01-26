@@ -7,6 +7,8 @@ import { createClineAPI } from "./exports"
 import "./utils/path" // necessary to have access to String.prototype.toPosix
 import { ACTION_NAMES, CodeActionProvider } from "./core/CodeActionProvider"
 import { DIFF_VIEW_URI_SCHEME } from "./integrations/editor/DiffViewProvider"
+import { ExternalApiServer } from "./api/server"
+import { ClineAPI } from "./exports"
 
 /*
 Built using https://github.com/microsoft/vscode-webview-ui-toolkit
@@ -21,7 +23,7 @@ let outputChannel: vscode.OutputChannel
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 	outputChannel = vscode.window.createOutputChannel("Roo-Code")
 	context.subscriptions.push(outputChannel)
 
@@ -225,7 +227,53 @@ export function activate(context: vscode.ExtensionContext) {
 		"E.g. Focus on performance optimization",
 	)
 
-	return createClineAPI(outputChannel, sidebarProvider)
+	const api = createClineAPI(outputChannel, sidebarProvider)
+
+	// Initialize external API server
+	let externalApiServer: ExternalApiServer | null = null
+
+	// Function to start/stop external API server based on configuration
+	async function updateExternalApiServer() {
+		const config = vscode.workspace.getConfiguration("roo-cline")
+		const enabled = config.get<boolean>("externalApi.enabled") || false
+		const port = config.get<number>("externalApi.port") || 3000
+		const allowedHosts = config.get<string[]>("externalApi.allowedHosts") || []
+
+		if (enabled) {
+			if (!externalApiServer) {
+				externalApiServer = new ExternalApiServer({ port, allowedHosts }, api)
+				try {
+					await externalApiServer.start()
+					outputChannel.appendLine(`External API server started on port ${port}`)
+				} catch (error) {
+					outputChannel.appendLine(`Failed to start external API server: ${error}`)
+					externalApiServer = null
+				}
+			}
+		} else if (externalApiServer) {
+			try {
+				await externalApiServer.stop()
+				outputChannel.appendLine("External API server stopped")
+			} catch (error) {
+				outputChannel.appendLine(`Failed to stop external API server: ${error}`)
+			}
+			externalApiServer = null
+		}
+	}
+
+	// Watch for configuration changes
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeConfiguration((e) => {
+			if (e.affectsConfiguration("roo-cline.externalApi")) {
+				updateExternalApiServer()
+			}
+		}),
+	)
+
+	// Initial server setup
+	await updateExternalApiServer()
+
+	return api
 }
 
 // This method is called when your extension is deactivated

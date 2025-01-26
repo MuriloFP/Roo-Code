@@ -53,6 +53,10 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 		listApiConfigMeta,
 		experimentalDiffStrategy,
 		setExperimentalDiffStrategy,
+		externalApiEnabled,
+		setExternalApiEnabled,
+		externalApiPort,
+		setExternalApiPort,
 	} = useExtensionState()
 	const [apiErrorMessage, setApiErrorMessage] = useState<string | undefined>(undefined)
 	const [modelIdErrorMessage, setModelIdErrorMessage] = useState<string | undefined>(undefined)
@@ -93,6 +97,8 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 				apiConfiguration,
 			})
 			vscode.postMessage({ type: "experimentalDiffStrategy", bool: experimentalDiffStrategy })
+			vscode.postMessage({ type: "externalApiEnabled", bool: externalApiEnabled })
+			vscode.postMessage({ type: "externalApiPort", value: externalApiPort })
 			onDone()
 		}
 	}
@@ -409,6 +415,43 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 							</div>
 						)}
 					</div>
+				</div>
+
+				<div style={{ marginBottom: 40 }}>
+					<h3 style={{ color: "var(--vscode-foreground)", margin: "0 0 15px 0" }}>External API Settings</h3>
+					<div style={{ marginBottom: 15 }}>
+						<VSCodeCheckbox
+							checked={externalApiEnabled}
+							onChange={(e: any) => setExternalApiEnabled(e.target.checked)}>
+							<span style={{ fontWeight: "500" }}>Enable External API Server</span>
+						</VSCodeCheckbox>
+						<p style={{ fontSize: "12px", marginTop: "5px", color: "var(--vscode-descriptionForeground)" }}>
+							When enabled, RooCode will run an HTTP server that allows external applications to interact
+							with it.
+						</p>
+					</div>
+
+					{externalApiEnabled && (
+						<div style={{ marginBottom: 15 }}>
+							<label style={{ fontWeight: "500", display: "block", marginBottom: 5 }}>
+								API Server Port
+							</label>
+							<VSCodeTextField
+								value={externalApiPort?.toString()}
+								onInput={(e: any) => setExternalApiPort(parseInt(e.target.value))}
+								placeholder="3000"
+								style={{ width: "100px" }}
+							/>
+							<p
+								style={{
+									fontSize: "12px",
+									marginTop: "5px",
+									color: "var(--vscode-descriptionForeground)",
+								}}>
+								Port number for the external API server (default: 3000)
+							</p>
+						</div>
+					)}
 				</div>
 
 				<div style={{ marginBottom: 40 }}>

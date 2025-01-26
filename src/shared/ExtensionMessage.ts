@@ -41,6 +41,8 @@ export interface ExtensionMessage {
 		| "autoApprovalEnabled"
 		| "updateCustomMode"
 		| "deleteCustomMode"
+		| "externalApiEnabled"
+		| "externalApiPort"
 	text?: string
 	action?:
 		| "chatButtonClicked"
@@ -110,7 +112,9 @@ export interface ExtensionState {
 	experimentalDiffStrategy?: boolean
 	autoApprovalEnabled?: boolean
 	customModes: ModeConfig[]
-	toolRequirements?: Record<string, boolean> // Map of tool names to their requirements (e.g. {"apply_diff": true} if diffEnabled)
+	toolRequirements?: Record<string, boolean>
+	externalApiEnabled?: boolean
+	externalApiPort?: number
 }
 
 export interface ClineMessage {
@@ -213,3 +217,5 @@ export interface ClineApiReqInfo {
 }
 
 export type ClineApiReqCancelReason = "streaming_failed" | "user_cancelled"
+
+export type ClineAskResponse = "yesButtonClicked" | "noButtonClicked" | "messageResponse"

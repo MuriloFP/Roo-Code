@@ -79,6 +79,8 @@ export interface WebviewMessage {
 		| "deleteCustomMode"
 		| "setopenAiCustomModelInfo"
 		| "openCustomModesSettings"
+		| "externalApiEnabled"
+		| "externalApiPort"
 	text?: string
 	disabled?: boolean
 	askResponse?: ClineAskResponse

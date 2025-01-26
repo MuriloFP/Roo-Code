@@ -69,6 +69,10 @@ export interface ExtensionStateContextType extends ExtensionState {
 	handleInputChange: (field: keyof ApiConfiguration) => (event: any) => void
 	customModes: ModeConfig[]
 	setCustomModes: (value: ModeConfig[]) => void
+	externalApiEnabled?: boolean
+	setExternalApiEnabled: (value: boolean) => void
+	externalApiPort?: number
+	setExternalApiPort: (value: number) => void
 }
 
 export const ExtensionStateContext = createContext<ExtensionStateContextType | undefined>(undefined)
@@ -101,6 +105,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		experimentalDiffStrategy: false,
 		autoApprovalEnabled: false,
 		customModes: [],
+		externalApiEnabled: false,
+		externalApiPort: 3000,
 	})
 
 	const [didHydrateState, setDidHydrateState] = useState(false)
@@ -227,6 +233,16 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		vscode.postMessage({ type: "webviewDidLaunch" })
 	}, [])
 
+	const setExternalApiEnabled = useCallback((value: boolean) => {
+		setState((prev) => ({ ...prev, externalApiEnabled: value }))
+		vscode.postMessage({ type: "externalApiEnabled", bool: value })
+	}, [])
+
+	const setExternalApiPort = useCallback((value: number) => {
+		setState((prev) => ({ ...prev, externalApiPort: value }))
+		vscode.postMessage({ type: "externalApiPort", value })
+	}, [])
+
 	const contextValue: ExtensionStateContextType = {
 		...state,
 		didHydrateState,
@@ -282,6 +298,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		setAutoApprovalEnabled: (value) => setState((prevState) => ({ ...prevState, autoApprovalEnabled: value })),
 		handleInputChange,
 		setCustomModes: (value) => setState((prevState) => ({ ...prevState, customModes: value })),
+		setExternalApiEnabled,
+		setExternalApiPort,
 	}
 
 	return <ExtensionStateContext.Provider value={contextValue}>{children}</ExtensionStateContext.Provider>

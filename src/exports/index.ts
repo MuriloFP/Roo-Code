@@ -1,6 +1,15 @@
 import * as vscode from "vscode"
 import { ClineProvider } from "../core/webview/ClineProvider"
-import { ClineAPI } from "./cline"
+
+export interface ClineAPI {
+	setCustomInstructions(value: string): Promise<void>
+	getCustomInstructions(): Promise<string | undefined>
+	startNewTask(task?: string, images?: string[]): Promise<void>
+	sendMessage(message?: string, images?: string[]): Promise<void>
+	pressPrimaryButton(): Promise<void>
+	pressSecondaryButton(): Promise<void>
+	sidebarProvider: ClineProvider
+}
 
 export function createClineAPI(outputChannel: vscode.OutputChannel, sidebarProvider: ClineProvider): ClineAPI {
 	const api: ClineAPI = {
