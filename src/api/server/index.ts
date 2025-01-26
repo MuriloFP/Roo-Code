@@ -1,8 +1,9 @@
-import express from "express"
-import { Request, Response, NextFunction } from "express"
+import express, { Request, Response, NextFunction } from "express"
 import { Server } from "http"
 import { ClineAPI } from "../../exports"
 import * as vscode from "vscode"
+import { Mode, modes, getModeBySlug } from "../../shared/modes"
+import { ModeConfig } from "../../shared/modes"
 
 /**
  * Configuration options for the external API server
@@ -19,7 +20,7 @@ export interface ExternalApiServerConfig {
  * Enables programmatic control of RooCode features through a REST API
  */
 export class ExternalApiServer {
-	private app: express.Express
+	private app: express.Application
 	private server: Server | null = null
 	private config: ExternalApiServerConfig
 	private clineApi: ClineAPI
@@ -51,7 +52,12 @@ export class ExternalApiServer {
 					return res.status(403).json({ error: "Origin not allowed" })
 				}
 			}
-			return next()
+			// Set CORS headers
+			res.setHeader("Access-Control-Allow-Origin", origin || "*")
+			res.setHeader("Access-Control-Allow-Methods", "GET, POST")
+			res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+			next()
+			return
 		})
 	}
 
@@ -63,6 +69,9 @@ export class ExternalApiServer {
 	 * - POST /api/instructions: Set custom instructions
 	 * - POST /api/tasks: Start a new task
 	 * - POST /api/messages: Send a message
+	 * - GET /api/modes: Get all available modes
+	 * - GET /api/modes/current: Get current mode
+	 * - POST /api/modes/switch: Switch to a specified mode
 	 */
 	private setupRoutes(): void {
 		// Get custom instructions
@@ -71,6 +80,7 @@ export class ExternalApiServer {
 				const instructions = await this.clineApi.getCustomInstructions()
 				return res.json({ instructions })
 			} catch (error) {
+				console.error("Error getting instructions:", error)
 				return res.status(500).json({ error: "Failed to get instructions" })
 			}
 		})
@@ -85,7 +95,50 @@ export class ExternalApiServer {
 				await this.clineApi.setCustomInstructions(instructions)
 				return res.json({ success: true })
 			} catch (error) {
+				console.error("Error setting instructions:", error)
 				return res.status(500).json({ error: "Failed to set instructions" })
+			}
+		})
+
+		// Get all modes
+		this.app.get("/api/modes", async (req: Request, res: Response) => {
+			try {
+				const customModes = await this.clineApi.sidebarProvider.customModesManager.getCustomModes()
+				return res.json({
+					builtIn: modes,
+					custom: customModes,
+				})
+			} catch (error) {
+				console.error("Error getting modes:", error)
+				return res.status(500).json({ error: "Failed to get modes" })
+			}
+		})
+
+		// Get current mode
+		this.app.get("/api/modes/current", async (req: Request, res: Response) => {
+			try {
+				const state = await this.clineApi.sidebarProvider.getState()
+				if (!state?.mode) {
+					return res.status(404).json({ error: "Current mode not found" })
+				}
+
+				// Check built-in modes first
+				const builtInMode = getModeBySlug(state.mode)
+				if (builtInMode) {
+					return res.json(builtInMode)
+				}
+
+				// Check custom modes
+				const customModes = await this.clineApi.sidebarProvider.customModesManager.getCustomModes()
+				const customMode = customModes.find((mode) => mode.slug === state.mode)
+				if (customMode) {
+					return res.json(customMode)
+				}
+
+				return res.status(404).json({ error: "Current mode not found" })
+			} catch (error) {
+				console.error("Error getting current mode:", error)
+				return res.status(500).json({ error: "Failed to get current mode" })
 			}
 		})
 
@@ -93,15 +146,16 @@ export class ExternalApiServer {
 		this.app.post("/api/tasks", async (req: Request, res: Response) => {
 			try {
 				const { message, images } = req.body
-				if (message && typeof message !== "string") {
+				if (message !== undefined && typeof message !== "string") {
 					return res.status(400).json({ error: "Invalid message format" })
 				}
-				if (images && !Array.isArray(images)) {
+				if (images !== undefined && !Array.isArray(images)) {
 					return res.status(400).json({ error: "Invalid images format" })
 				}
 				await this.clineApi.startNewTask(message, images)
 				return res.json({ success: true })
 			} catch (error) {
+				console.error("Error starting task:", error)
 				return res.status(500).json({ error: "Failed to start task" })
 			}
 		})
@@ -110,16 +164,39 @@ export class ExternalApiServer {
 		this.app.post("/api/messages", async (req: Request, res: Response) => {
 			try {
 				const { message, images } = req.body
-				if (message && typeof message !== "string") {
+				if (message !== undefined && typeof message !== "string") {
 					return res.status(400).json({ error: "Invalid message format" })
 				}
-				if (images && !Array.isArray(images)) {
+				if (images !== undefined && !Array.isArray(images)) {
 					return res.status(400).json({ error: "Invalid images format" })
 				}
 				await this.clineApi.sendMessage(message, images)
 				return res.json({ success: true })
 			} catch (error) {
+				console.error("Error sending message:", error)
 				return res.status(500).json({ error: "Failed to send message" })
+			}
+		})
+
+		// Switch mode
+		this.app.post("/api/modes/switch", async (req: Request, res: Response) => {
+			try {
+				const { mode } = req.body
+				if (typeof mode !== "string") {
+					return res.status(400).json({ error: "Mode must be a string" })
+				}
+
+				const customModes = await this.clineApi.sidebarProvider.customModesManager.getCustomModes()
+				const modeConfig = getModeBySlug(mode, customModes)
+				if (!modeConfig) {
+					return res.status(404).json({ error: "Mode not found" })
+				}
+
+				await this.clineApi.sidebarProvider.handleModeSwitch(mode)
+				return res.json({ message: "Mode switched successfully" })
+			} catch (error) {
+				console.error("Error switching mode:", error)
+				return res.status(500).json({ error: "Failed to switch mode" })
 			}
 		})
 	}
@@ -132,8 +209,15 @@ export class ExternalApiServer {
 	public async start(): Promise<void> {
 		return new Promise((resolve, reject) => {
 			try {
-				this.server = this.app.listen(this.config.port, "0.0.0.0", () => {
+				// Listen on both IPv4 and IPv6
+				this.server = this.app.listen(this.config.port, () => {
+					console.log(`External API server is running on port ${this.config.port}`)
 					resolve()
+				})
+
+				// Handle server errors
+				this.server.on("error", (error) => {
+					reject(error)
 				})
 			} catch (error) {
 				reject(error)
@@ -149,7 +233,8 @@ export class ExternalApiServer {
 	public async stop(): Promise<void> {
 		return new Promise((resolve, reject) => {
 			if (!this.server) {
-				return resolve()
+				resolve()
+				return
 			}
 			this.server.close((error) => {
 				if (error) {

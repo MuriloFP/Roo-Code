@@ -51,47 +51,44 @@ Current Phase: Planning & Initial Implementation
 
 ## External API Feature Progress
 
-### Completed
+### Completed Features
 
-1. Core server implementation
+- External API Server core implementation
 
-    - Express.js server setup
-    - API endpoints implementation
+    - Server setup with Express.js
     - CORS security middleware
-    - Error handling and validation
+    - Error handling and logging
+    - Configuration through VSCode settings
 
-2. Configuration
+- API Endpoints (All Tested & Working)
 
-    - VSCode settings integration
-    - Port configuration
-    - CORS allowed hosts setting
+    - GET /api/instructions: Retrieve custom instructions
+    - POST /api/instructions: Set custom instructions
+    - POST /api/tasks: Start a new task
+    - POST /api/messages: Send a message
+    - GET /api/modes: List all available modes (built-in and custom)
+    - GET /api/modes/current: Get current active mode
+    - POST /api/modes/switch: Switch to a specified mode
 
-3. Testing
-
-    - Unit tests for all endpoints
-    - CORS validation tests
+- Test Coverage
+    - 28 passing tests covering all endpoints
+    - Validation tests for input formats
     - Error handling tests
-    - Server lifecycle tests
-
-4. Documentation
-    - API documentation with examples
-    - Configuration guide
-    - Best practices guide
-    - Example Python client
+    - CORS security tests
 
 ### In Progress
 
-1. Syncing with upstream changes
-2. Preparing for pull request
-3. Additional testing with real-world scenarios
+- Documentation improvements
+- Rate limiting implementation
+- Additional security features
 
 ### Next Steps
 
-1. Add rate limiting
-2. Enhance error messages
-3. Add more client examples
-4. Add authentication (if needed)
-5. Improve logging
+1. Add rate limiting to prevent API abuse
+2. Enhance error messages with more detail
+3. Add authentication mechanism
+4. Implement logging system for API requests
+5. Add more examples to API documentation
 
 # RooCode External API Implementation Progress
 

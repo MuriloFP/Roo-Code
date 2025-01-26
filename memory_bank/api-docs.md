@@ -104,18 +104,27 @@ Sets or updates the global instructions. These are distinct from mode-specific i
 
 #### GET /api/modes
 
-Lists all available modes in RooCode.
+Retrieves all available modes, including both built-in and custom modes.
 
 **Response Format:**
 
 ```json
 {
-    "modes": [
+    "builtIn": [
         {
             "slug": string,
             "name": string,
             "roleDefinition": string,
-            "customInstructions": string | undefined,
+            "customInstructions": string,
+            "groups": string[]
+        }
+    ],
+    "custom": [
+        {
+            "slug": string,
+            "name": string,
+            "roleDefinition": string,
+            "customInstructions": string,
             "groups": string[]
         }
     ]

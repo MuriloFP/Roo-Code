@@ -69,41 +69,58 @@ The external API integration follows these key architectural patterns:
 
 ### Server Implementation
 
-- Uses Express.js for HTTP server
-- RESTful API design with JSON request/response format
+- Express.js HTTP server with TypeScript
+- RESTful API design principles
+- Custom CORS middleware for security
+- Consistent error handling patterns
 - Stateless request handling
-- CORS middleware for security
-- Configuration through VSCode settings
 
 ### Key Components
 
-1. `ExternalApiServer` class
+1. ExternalApiServer class
 
-    - Manages server lifecycle (start/stop)
-    - Handles route setup and middleware
-    - Integrates with ClineAPI for RooCode operations
+    - Manages server lifecycle
+    - Configures middleware
+    - Sets up API routes
+    - Handles cleanup on shutdown
 
 2. Configuration
 
-    - Port number (default: 3000)
-    - Allowed origins for CORS
-    - Enable/disable through VSCode settings
+    - VSCode settings integration
+    - Port configuration
+    - CORS allowed hosts
+    - Feature toggles
 
 3. API Endpoints
 
-    - GET /api/instructions
-    - POST /api/instructions
-    - POST /api/tasks
-    - POST /api/messages
+    - GET endpoints for retrieving state
+    - POST endpoints for actions
+    - Consistent response formats
+    - Proper HTTP status codes
 
 4. Error Handling
+
     - Consistent error response format
-    - HTTP status codes for different scenarios
-    - Input validation for all endpoints
+    - Detailed error messages
+    - Proper HTTP status codes
+    - Error logging
 
-### Testing
+5. Testing
+    - Jest test framework
+    - HTTP request mocking
+    - Comprehensive test coverage
+    - Error case testing
 
-- Comprehensive test suite using Jest
-- Tests for CORS, validation, and error handling
-- Server lifecycle management tests
-- Mock ClineAPI for isolated testing
+### Security Model
+
+- CORS protection
+- Input validation
+- Error message sanitization
+- Configurable allowed origins
+
+### Integration Points
+
+- ClineAPI for core functionality
+- VSCode extension APIs
+- Custom modes manager
+- Sidebar provider

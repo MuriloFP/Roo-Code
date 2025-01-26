@@ -1,12 +1,39 @@
 import { ExternalApiServer, ExternalApiServerConfig } from "../index"
 import { ClineAPI } from "../../../exports"
 import * as http from "http"
+import { modes, ModeConfig, getModeBySlug } from "../../../shared/modes"
+import delay from "delay"
 
 jest.mock("../../../exports")
 
 // Helper function to get a random port number between 3001-4000
 function getRandomPort(): number {
 	return Math.floor(Math.random() * 1000) + 3001
+}
+
+// Helper function to retry a request with exponential backoff
+async function retryRequest(
+	options: {
+		port: number
+		method: string
+		path: string
+		body?: any
+		headers?: { [key: string]: string }
+	},
+	maxRetries = 3,
+): Promise<{ status: number; body: any }> {
+	for (let attempt = 1; attempt <= maxRetries; attempt++) {
+		try {
+			return await makeRequest(options)
+		} catch (error) {
+			if (attempt === maxRetries) {
+				throw error
+			}
+			// Exponential backoff: wait longer between each retry
+			await delay(Math.pow(2, attempt) * 100)
+		}
+	}
+	throw new Error("Max retries exceeded")
 }
 
 function makeRequest(options: {
@@ -65,23 +92,33 @@ function makeRequest(options: {
 
 describe("ExternalApiServer", () => {
 	let server: ExternalApiServer
-	let mockClineApi: jest.Mocked<ClineAPI>
-	let config: ExternalApiServerConfig
 	let port: number
+	let config: ExternalApiServerConfig
+	let mockClineApi: jest.Mocked<ClineAPI>
+	let mockGetCustomModes: jest.Mock<Promise<ModeConfig[]>>
 
 	// Increase timeout for all tests in this suite
 	jest.setTimeout(15000)
 
 	beforeEach(async () => {
-		port = getRandomPort()
+		port = await getRandomPort()
+
+		// Create mock for getCustomModes
+		mockGetCustomModes = jest.fn<Promise<ModeConfig[]>, []>()
+
+		// Mock the ClineAPI
 		mockClineApi = {
-			getCustomInstructions: jest.fn(),
 			setCustomInstructions: jest.fn(),
+			getCustomInstructions: jest.fn(),
 			startNewTask: jest.fn(),
 			sendMessage: jest.fn(),
 			pressPrimaryButton: jest.fn(),
 			pressSecondaryButton: jest.fn(),
-			sidebarProvider: {} as any,
+			sidebarProvider: {
+				customModesManager: {
+					getCustomModes: mockGetCustomModes,
+				},
+			} as any,
 		}
 
 		config = {
@@ -101,7 +138,7 @@ describe("ExternalApiServer", () => {
 
 	describe("CORS middleware", () => {
 		it("should allow requests from allowed origins", async () => {
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "GET",
 				path: "/api/instructions",
@@ -112,7 +149,7 @@ describe("ExternalApiServer", () => {
 		})
 
 		it("should block requests from disallowed origins", async () => {
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "GET",
 				path: "/api/instructions",
@@ -129,7 +166,7 @@ describe("ExternalApiServer", () => {
 			const mockInstructions = "test instructions"
 			mockClineApi.getCustomInstructions.mockResolvedValue(mockInstructions)
 
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "GET",
 				path: "/api/instructions",
@@ -143,7 +180,7 @@ describe("ExternalApiServer", () => {
 		it("should handle errors", async () => {
 			mockClineApi.getCustomInstructions.mockRejectedValue(new Error("test error"))
 
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "GET",
 				path: "/api/instructions",
@@ -158,7 +195,7 @@ describe("ExternalApiServer", () => {
 		it("should set instructions successfully", async () => {
 			const instructions = "new instructions"
 
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "POST",
 				path: "/api/instructions",
@@ -171,7 +208,7 @@ describe("ExternalApiServer", () => {
 		})
 
 		it("should validate instructions format", async () => {
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "POST",
 				path: "/api/instructions",
@@ -185,7 +222,7 @@ describe("ExternalApiServer", () => {
 		it("should handle errors", async () => {
 			mockClineApi.setCustomInstructions.mockRejectedValue(new Error("test error"))
 
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "POST",
 				path: "/api/instructions",
@@ -202,7 +239,7 @@ describe("ExternalApiServer", () => {
 			const message = "test task"
 			const images = ["image1.png"]
 
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "POST",
 				path: "/api/tasks",
@@ -215,7 +252,7 @@ describe("ExternalApiServer", () => {
 		})
 
 		it("should validate message format", async () => {
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "POST",
 				path: "/api/tasks",
@@ -227,7 +264,7 @@ describe("ExternalApiServer", () => {
 		})
 
 		it("should validate images format", async () => {
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "POST",
 				path: "/api/tasks",
@@ -241,7 +278,7 @@ describe("ExternalApiServer", () => {
 		it("should handle errors", async () => {
 			mockClineApi.startNewTask.mockRejectedValue(new Error("test error"))
 
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "POST",
 				path: "/api/tasks",
@@ -258,7 +295,7 @@ describe("ExternalApiServer", () => {
 			const message = "test message"
 			const images = ["image1.png"]
 
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "POST",
 				path: "/api/messages",
@@ -271,7 +308,7 @@ describe("ExternalApiServer", () => {
 		})
 
 		it("should validate message format", async () => {
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "POST",
 				path: "/api/messages",
@@ -283,7 +320,7 @@ describe("ExternalApiServer", () => {
 		})
 
 		it("should validate images format", async () => {
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "POST",
 				path: "/api/messages",
@@ -297,7 +334,7 @@ describe("ExternalApiServer", () => {
 		it("should handle errors", async () => {
 			mockClineApi.sendMessage.mockRejectedValue(new Error("test error"))
 
-			const response = await makeRequest({
+			const response = await retryRequest({
 				port,
 				method: "POST",
 				path: "/api/messages",
@@ -306,6 +343,191 @@ describe("ExternalApiServer", () => {
 
 			expect(response.status).toBe(500)
 			expect(response.body.error).toBe("Failed to send message")
+		})
+	})
+
+	describe("GET /api/modes", () => {
+		it("should return all available modes", async () => {
+			// Mock custom modes
+			const mockCustomModes = [
+				{
+					slug: "custom-mode",
+					name: "Custom Mode",
+					roleDefinition: "A custom mode for testing",
+					customInstructions: "Custom instructions",
+					groups: ["read"],
+				},
+			]
+
+			// Set up mock to resolve with custom modes
+			mockGetCustomModes.mockResolvedValue(mockCustomModes)
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/modes",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({
+				builtIn: Object.values(modes),
+				custom: mockCustomModes,
+			})
+		})
+
+		it("should handle errors when getting modes", async () => {
+			// Set up mock to reject with error
+			mockGetCustomModes.mockRejectedValue(new Error("Failed to get custom modes"))
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/modes",
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body).toEqual({
+				error: "Failed to get modes",
+			})
+		})
+	})
+
+	describe("GET /api/modes/current", () => {
+		beforeEach(() => {
+			// Mock getState to return a default mode
+			mockClineApi.sidebarProvider.getState = jest.fn().mockResolvedValue({
+				mode: "code", // default mode
+			})
+		})
+
+		it("should return current mode when it is a built-in mode", async () => {
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/modes/current",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual(getModeBySlug("code"))
+		})
+
+		it("should return current mode when it is a custom mode", async () => {
+			const customMode = {
+				slug: "custom-mode",
+				name: "Custom Mode",
+				roleDefinition: "A custom mode for testing",
+				customInstructions: "Custom instructions",
+				groups: ["read"],
+			}
+
+			mockClineApi.sidebarProvider.getState = jest.fn().mockResolvedValue({
+				mode: "custom-mode",
+			})
+			mockGetCustomModes.mockResolvedValue([customMode])
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/modes/current",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual(customMode)
+		})
+
+		it("should return 404 when current mode is not found", async () => {
+			mockClineApi.sidebarProvider.getState = jest.fn().mockResolvedValue({
+				mode: "non-existent-mode",
+			})
+			mockGetCustomModes.mockResolvedValue([])
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/modes/current",
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("Current mode not found")
+		})
+
+		it("should handle errors when getting current mode", async () => {
+			mockClineApi.sidebarProvider.getState = jest.fn().mockRejectedValue(new Error("Failed to get state"))
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/modes/current",
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to get current mode")
+		})
+	})
+
+	describe("POST /api/modes/switch", () => {
+		beforeEach(() => {
+			// Mock handleModeSwitch
+			mockClineApi.sidebarProvider.handleModeSwitch = jest.fn().mockResolvedValue(undefined)
+		})
+
+		it("should switch mode successfully", async () => {
+			const targetMode = "architect"
+			mockGetCustomModes.mockResolvedValue([])
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/modes/switch",
+				body: { mode: targetMode },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({ message: "Mode switched successfully" })
+			expect(mockClineApi.sidebarProvider.handleModeSwitch).toHaveBeenCalledWith(targetMode)
+		})
+
+		it("should validate mode format", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/modes/switch",
+				body: { mode: 123 },
+			})
+
+			expect(response.status).toBe(400)
+			expect(response.body.error).toBe("Mode must be a string")
+		})
+
+		it("should return 404 when mode is not found", async () => {
+			const nonExistentMode = "non-existent-mode"
+			mockGetCustomModes.mockResolvedValue([])
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/modes/switch",
+				body: { mode: nonExistentMode },
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("Mode not found")
+		})
+
+		it("should handle errors when switching mode", async () => {
+			mockClineApi.sidebarProvider.handleModeSwitch = jest
+				.fn()
+				.mockRejectedValue(new Error("Failed to switch mode"))
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/modes/switch",
+				body: { mode: "code" },
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to switch mode")
 		})
 	})
 
