@@ -74,6 +74,7 @@ export interface WebviewMessage {
 		| "systemPrompt"
 		| "enhancementApiConfigId"
 		| "experimentalDiffStrategy"
+		| "externalApiSettings"
 		| "autoApprovalEnabled"
 		| "updateCustomMode"
 		| "deleteCustomMode"

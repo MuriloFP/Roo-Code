@@ -97,8 +97,10 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 				apiConfiguration,
 			})
 			vscode.postMessage({ type: "experimentalDiffStrategy", bool: experimentalDiffStrategy })
-			vscode.postMessage({ type: "externalApiEnabled", bool: externalApiEnabled })
-			vscode.postMessage({ type: "externalApiPort", value: externalApiPort })
+			vscode.postMessage({
+				type: "externalApiSettings",
+				values: { enabled: externalApiEnabled, port: externalApiPort },
+			})
 			onDone()
 		}
 	}
@@ -422,7 +424,16 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 					<div style={{ marginBottom: 15 }}>
 						<VSCodeCheckbox
 							checked={externalApiEnabled}
-							onChange={(e: any) => setExternalApiEnabled(e.target.checked)}>
+							onChange={(e: any) => {
+								setExternalApiEnabled(e.target.checked)
+								vscode.postMessage({
+									type: "externalApiSettings",
+									values: {
+										enabled: e.target.checked,
+										port: externalApiPort,
+									},
+								})
+							}}>
 							<span style={{ fontWeight: "500" }}>Enable External API Server</span>
 						</VSCodeCheckbox>
 						<p style={{ fontSize: "12px", marginTop: "5px", color: "var(--vscode-descriptionForeground)" }}>
@@ -438,7 +449,17 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 							</label>
 							<VSCodeTextField
 								value={externalApiPort?.toString()}
-								onInput={(e: any) => setExternalApiPort(parseInt(e.target.value))}
+								onInput={(e: any) => {
+									const port = parseInt(e.target.value)
+									setExternalApiPort(port)
+									vscode.postMessage({
+										type: "externalApiSettings",
+										values: {
+											enabled: externalApiEnabled,
+											port: port,
+										},
+									})
+								}}
 								placeholder="3000"
 								style={{ width: "100px" }}
 							/>

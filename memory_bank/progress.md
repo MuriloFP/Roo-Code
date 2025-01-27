@@ -196,3 +196,82 @@
 - Authentication system
 - Task state persistence between sessions
 - Concurrent task operation handling
+
+## External API Server Progress
+
+### Completed Features ✅
+
+1. Task Management
+
+    - Create new tasks with optional parameters (mode, model, message, wait_for_completion)
+    - Get task status (current and by ID)
+    - Get task logs (current and by ID)
+    - List tasks with history
+
+2. Message Handling
+
+    - Send messages to current task
+    - Send messages to specific task by ID
+
+3. Mode Management
+
+    - List all available modes
+    - Get current mode
+    - Switch between modes
+
+4. Configuration Profile Management
+
+    - List all profiles
+    - Get current profile
+    - Switch between profiles
+
+5. Auto-Approve Settings
+
+    - Get auto-approve settings
+    - Update auto-approve settings
+    - Toggle master auto-approve switch
+
+6. MCP Management
+
+    - List available MCPs with status
+    - Enable/disable specific MCPs
+
+7. Development Infrastructure
+    - Comprehensive test suite (86 tests)
+    - API documentation
+    - Error handling
+    - CORS security
+
+### In Progress 🚧
+
+1. Manual Testing
+
+    - Creating Python example scripts
+    - Testing each endpoint manually
+    - Documenting usage patterns
+
+2. Documentation
+    - Implementation details for future development
+    - Usage examples and showcases
+
+### Future Plans 🔮
+
+1. Multi-Window Support
+
+    - Research and design for multiple Roo windows
+
+2. MCP Integration
+
+    - Create example MCP using API endpoints
+    - Enable model-to-model control through MCP
+
+3. Potential Enhancements
+    - Response streaming (under consideration)
+    - WebSocket support for real-time updates
+
+### Test Status
+
+- Total Tests: 86
+- Passing: 86
+- Coverage: All endpoints and error cases
+- Framework: Jest

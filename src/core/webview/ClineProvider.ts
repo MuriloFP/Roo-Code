@@ -1176,6 +1176,21 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						}
 						await this.postStateToWebview()
 						break
+					case "externalApiSettings":
+						if (message.values) {
+							const config = vscode.workspace.getConfiguration("roo-cline")
+							await config.update(
+								"externalApi.enabled",
+								message.values.enabled,
+								vscode.ConfigurationTarget.Global,
+							)
+							await config.update(
+								"externalApi.port",
+								message.values.port,
+								vscode.ConfigurationTarget.Global,
+							)
+						}
+						break
 					case "updateCustomMode":
 						if (message.modeConfig) {
 							await this.customModesManager.updateCustomMode(message.modeConfig.slug, message.modeConfig)
