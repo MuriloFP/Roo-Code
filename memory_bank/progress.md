@@ -24,6 +24,19 @@
 - Full test coverage implemented
 - Documentation updated
 
+✓ Task Management
+
+- POST /api/tasks: Create new tasks with enhanced parameters
+- GET /api/tasks: List tasks with pagination
+- GET /api/tasks/status & GET /api/tasks/:id/status: Task status retrieval
+- GET /api/tasks/logs & GET /api/tasks/:id/logs: Conversation history
+
+✓ Auto-Approve Settings
+
+- GET /api/auto-approve: Get current settings
+- POST /api/auto-approve: Update all settings
+- POST /api/auto-approve/enabled: Toggle master switch
+
 ✓ Documentation
 
 - API documentation in progress
@@ -47,7 +60,7 @@
 - Mode management (GET all, GET current, POST switch)
 - Profile management (GET all, GET current, POST switch)
 - Task Management (Complete):
-    - POST /api/tasks: Create new tasks with enhanced parameters
+    - POST /api/tasks: Create new tasks with enhanced parameters (mode, profile, wait_for_completion)
     - GET /api/tasks: List tasks with pagination
     - GET /api/tasks/status & GET /api/tasks/:id/status: Task status retrieval
     - GET /api/tasks/logs & GET /api/tasks/:id/logs: Conversation history
@@ -59,8 +72,8 @@
 
 ### Testing
 
-- Comprehensive test coverage (61 passing tests)
-- Tests for all API endpoints including auto-approve
+- Comprehensive test coverage (69 passing tests)
+- Tests for all API endpoints including auto-approve and enhanced task creation
 - Error handling test cases
 - Mock implementations for ClineAPI and file system operations
 
@@ -86,6 +99,16 @@
 
 ## In Progress
 
+### MCP Management Implementation (High Priority)
+
+- [ ] Implement MCP endpoints:
+    - [ ] GET /api/mcps: List all MCPs with status
+    - [ ] GET /api/mcps/:id: Get detailed MCP information
+    - [ ] POST /api/mcps/:id/status: Enable/disable MCP
+- [ ] Add comprehensive tests for MCP endpoints
+- [ ] Update documentation with MCP endpoints
+- [ ] Implement proper error handling for MCP operations
+
 ### Task Enhancement (High Priority)
 
 - [ ] Extend POST /api/tasks endpoint:
@@ -104,7 +127,14 @@
 
 ## Next Steps
 
-1. Task Enhancement Implementation:
+1. MCP Management Implementation:
+
+    - Design and implement MCP endpoints
+    - Add comprehensive tests
+    - Update documentation
+    - Implement proper error handling
+
+2. Task Enhancement Implementation:
 
     - Design new parameters for task creation
     - Research and plan streaming response implementation
@@ -113,10 +143,10 @@
     - Add comprehensive tests
     - Update documentation
 
-2. Implement WebSocket support for real-time updates
-3. Add rate limiting and authentication
-4. Enhance error messages with more details
-5. Clean up duplicate mock files
+3. Implement WebSocket support for real-time updates
+4. Add rate limiting and authentication
+5. Enhance error messages with more details
+6. Clean up duplicate mock files
 
 ## Known Issues
 

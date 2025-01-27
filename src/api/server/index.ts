@@ -243,14 +243,71 @@ export class ExternalApiServer {
 		// Start new task
 		this.app.post("/api/tasks", async (req: Request, res: Response) => {
 			try {
-				const { message, images } = req.body
+				const { message, images, mode, profile, wait_for_completion = false } = req.body
+
+				// Validate input parameters
 				if (message !== undefined && typeof message !== "string") {
 					return res.status(400).json({ error: "Invalid message format" })
 				}
 				if (images !== undefined && !Array.isArray(images)) {
 					return res.status(400).json({ error: "Invalid images format" })
 				}
+				if (mode !== undefined && typeof mode !== "string") {
+					return res.status(400).json({ error: "Mode must be a string" })
+				}
+				if (profile !== undefined && typeof profile !== "string") {
+					return res.status(400).json({ error: "Profile must be a string" })
+				}
+				if (typeof wait_for_completion !== "boolean") {
+					return res.status(400).json({ error: "wait_for_completion must be a boolean" })
+				}
+
+				// Switch mode if specified
+				if (mode) {
+					const customModes = await this.clineApi.sidebarProvider.customModesManager.getCustomModes()
+					const modeConfig = getModeBySlug(mode, customModes)
+					if (!modeConfig) {
+						return res.status(404).json({ error: "Mode not found" })
+					}
+					await this.clineApi.sidebarProvider.handleModeSwitch(mode)
+				}
+
+				// Switch profile if specified
+				if (profile) {
+					const hasProfile = await this.clineApi.sidebarProvider.configManager.hasConfig(profile)
+					if (!hasProfile) {
+						return res.status(404).json({ error: `Profile '${profile}' not found` })
+					}
+					await this.clineApi.sidebarProvider.configManager.setCurrentConfig(profile)
+					await this.clineApi.sidebarProvider.updateGlobalState("currentApiConfigName", profile)
+					await this.clineApi.sidebarProvider.postStateToWebview()
+				}
+
+				// Start the task
 				await this.clineApi.startNewTask(message, images)
+
+				// If wait_for_completion is true, wait for task to complete
+				if (wait_for_completion) {
+					const taskHistory =
+						((await this.clineApi.sidebarProvider.getGlobalState("taskHistory")) as
+							| HistoryItem[]
+							| undefined) || []
+					if (taskHistory.length === 0) {
+						return res.status(500).json({ error: "Failed to start task" })
+					}
+					const currentTaskId = taskHistory[taskHistory.length - 1].id
+					const taskData = await this.clineApi.sidebarProvider.getTaskWithId(currentTaskId)
+					const uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
+					const lastMessage = uiMessages[uiMessages.length - 1]
+
+					return res.json({
+						id: currentTaskId,
+						status: lastMessage?.type === "user" ? "waiting_for_response" : "waiting_for_approval",
+						lastMessage: lastMessage?.content || null,
+					})
+				}
+
+				// Return success response if not waiting for completion
 				return res.json({ success: true })
 			} catch (error) {
 				console.error("Error starting task:", error)

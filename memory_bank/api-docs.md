@@ -330,14 +330,9 @@ Get current auto-approve settings.
 }
 ```
 
-**Status Codes**
-
-- `200`: Success
-- `500`: Server error
-
 #### POST /api/auto-approve
 
-Update all auto-approve settings.
+Update auto-approve settings.
 
 **Request Body**
 
@@ -361,12 +356,6 @@ Update all auto-approve settings.
 }
 ```
 
-**Status Codes**
-
-- `200`: Success
-- `400`: Invalid request (non-boolean values)
-- `500`: Server error
-
 #### POST /api/auto-approve/enabled
 
 Update the master auto-approve switch.
@@ -387,11 +376,76 @@ Update the master auto-approve switch.
 }
 ```
 
-**Status Codes**
+### MCP Settings (Coming Soon)
 
-- `200`: Success
-- `400`: Invalid request (non-boolean value)
-- `500`: Server error
+#### GET /api/mcps
+
+List all available MCPs.
+
+**Response**
+
+```json
+[
+    {
+        "id": "string",
+        "name": "string",
+        "status": "enabled" | "disabled",
+        "description": "string"
+    }
+]
+```
+
+#### GET /api/mcps/:id
+
+Get detailed information about a specific MCP.
+
+**Parameters**
+
+- `id` (path): The unique identifier of the MCP
+
+**Response**
+
+```json
+{
+    "id": "string",
+    "name": "string",
+    "status": "enabled" | "disabled",
+    "description": "string",
+    "tools": [
+        {
+            "name": "string",
+            "description": "string",
+            "parameters": {}
+        }
+    ],
+    "metadata": {}
+}
+```
+
+#### POST /api/mcps/:id/status
+
+Enable or disable a specific MCP.
+
+**Parameters**
+
+- `id` (path): The unique identifier of the MCP
+
+**Request Body**
+
+```json
+{
+    "enabled": boolean
+}
+```
+
+**Response**
+
+```json
+{
+    "success": true,
+    "status": "enabled" | "disabled"
+}
+```
 
 ### Profiles
 

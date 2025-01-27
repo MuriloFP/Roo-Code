@@ -107,14 +107,9 @@ Task Enhancement Implementation:
 3. Enhance error messages with more detailed information
 4. Clean up duplicate mock files
 5. Consider implementing authentication
-6. Implement Auto-Approve Settings endpoints:
-    - GET /api/auto-approve: Retrieve current settings
-    - POST /api/auto-approve/settings: Update settings
-    - POST /api/auto-approve/toggle: Enable/disable auto-approve
-7. Research how RooCode currently manages auto-approve settings
-8. Design response format for settings endpoint
-9. Add tests for new endpoints
-10. Update API documentation
+6. Design response format for settings endpoint
+7. Add tests for new endpoints
+8. Update API documentation
 
 ### Open Questions
 

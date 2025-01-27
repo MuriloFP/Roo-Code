@@ -237,7 +237,28 @@ describe("ExternalApiServer", () => {
 	})
 
 	describe("POST /api/tasks", () => {
-		it("should start task successfully", async () => {
+		beforeEach(() => {
+			// Mock additional methods needed for enhanced task creation
+			mockClineApi.sidebarProvider.handleModeSwitch = jest.fn().mockResolvedValue(undefined)
+			mockClineApi.sidebarProvider.configManager = {
+				hasConfig: jest.fn().mockResolvedValue(true),
+				loadConfig: jest.fn().mockResolvedValue({ id: "test-id", apiProvider: "anthropic" }),
+				setCurrentConfig: jest.fn().mockResolvedValue(undefined),
+			} as any
+			mockClineApi.sidebarProvider.updateGlobalState = jest.fn().mockResolvedValue(undefined)
+			mockClineApi.sidebarProvider.postStateToWebview = jest.fn().mockResolvedValue(undefined)
+			mockClineApi.sidebarProvider.getGlobalState = jest
+				.fn()
+				.mockResolvedValue([{ id: "task-1", ts: Date.now(), task: "test task" }])
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockResolvedValue({
+				uiMessagesFilePath: "test-path",
+			})
+			;(fs.readFile as jest.Mock).mockResolvedValue(
+				JSON.stringify([{ type: "assistant", content: "test response" }]),
+			)
+		})
+
+		it("should start task successfully with basic parameters", async () => {
 			const message = "test task"
 			const images = ["image1.png"]
 
@@ -251,6 +272,123 @@ describe("ExternalApiServer", () => {
 			expect(response.status).toBe(200)
 			expect(response.body).toEqual({ success: true })
 			expect(mockClineApi.startNewTask).toHaveBeenCalledWith(message, images)
+		})
+
+		it("should start task with mode switch", async () => {
+			mockGetCustomModes.mockResolvedValue([])
+			const message = "test task"
+			const mode = "architect"
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks",
+				body: { message, mode },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({ success: true })
+			expect(mockClineApi.sidebarProvider.handleModeSwitch).toHaveBeenCalledWith(mode)
+			expect(mockClineApi.startNewTask).toHaveBeenCalledWith(message, undefined)
+		})
+
+		it("should start task with profile switch", async () => {
+			const message = "test task"
+			const profile = "test-profile"
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks",
+				body: { message, profile },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({ success: true })
+			expect(mockClineApi.sidebarProvider.configManager.setCurrentConfig).toHaveBeenCalledWith(profile)
+			expect(mockClineApi.sidebarProvider.updateGlobalState).toHaveBeenCalledWith("currentApiConfigName", profile)
+			expect(mockClineApi.startNewTask).toHaveBeenCalledWith(message, undefined)
+		})
+
+		it("should wait for task completion when specified", async () => {
+			const message = "test task"
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks",
+				body: { message, wait_for_completion: true },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({
+				id: "task-1",
+				status: "waiting_for_approval",
+				lastMessage: "test response",
+			})
+			expect(mockClineApi.startNewTask).toHaveBeenCalledWith(message, undefined)
+		})
+
+		it("should validate mode format", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks",
+				body: { message: "test", mode: 123 },
+			})
+
+			expect(response.status).toBe(400)
+			expect(response.body.error).toBe("Mode must be a string")
+		})
+
+		it("should validate profile format", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks",
+				body: { message: "test", profile: 123 },
+			})
+
+			expect(response.status).toBe(400)
+			expect(response.body.error).toBe("Profile must be a string")
+		})
+
+		it("should validate wait_for_completion format", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks",
+				body: { message: "test", wait_for_completion: "not-a-boolean" },
+			})
+
+			expect(response.status).toBe(400)
+			expect(response.body.error).toBe("wait_for_completion must be a boolean")
+		})
+
+		it("should handle non-existent mode", async () => {
+			mockGetCustomModes.mockResolvedValue([])
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks",
+				body: { message: "test", mode: "non-existent-mode" },
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("Mode not found")
+		})
+
+		it("should handle non-existent profile", async () => {
+			mockClineApi.sidebarProvider.configManager.hasConfig = jest.fn().mockResolvedValue(false)
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks",
+				body: { message: "test", profile: "non-existent-profile" },
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("Profile 'non-existent-profile' not found")
 		})
 
 		it("should validate message format", async () => {
