@@ -266,14 +266,14 @@ export class ExternalApiServer {
 				return "completed"
 			}
 
-			// Check for command approval needed
-			if (lastMessage.type === "ask" && lastMessage.ask === "command") {
-				return "needs_approval"
-			}
-
-			// Check for user input needed
+			// Check for ask messages
 			if (lastMessage.type === "ask") {
-				return "needs_input"
+				// Follow-up questions need input
+				if (lastMessage.ask === "followup") {
+					return "needs_input"
+				}
+				// All other ask messages need approval
+				return "needs_approval"
 			}
 
 			// Check for API request in progress

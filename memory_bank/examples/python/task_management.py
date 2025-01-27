@@ -10,10 +10,9 @@ This example demonstrates:
 
 import requests
 import json
-import time
 
 # Configuration
-API_BASE_URL = "http://localhost:3000/api"  # Adjust port as needed
+API_BASE_URL = "http://localhost:3002/api"  # Adjust port as needed
 
 def list_tasks(limit=10):
     """List recent tasks with optional limit."""
@@ -55,15 +54,21 @@ def main():
         # Get the most recent task ID
         task_id = tasks[0]["id"]
         
+        input(f"\nPress Enter to get status for task {task_id}...")  # Wait for user input
+        
         # Get status of specific task
         print(f"\nGetting status for task {task_id}...")
         status = get_task_status_by_id(task_id)
         print(f"Task status: {json.dumps(status, indent=2)}")
 
+        input(f"\nPress Enter to get logs for task {task_id}...")  # Wait for user input
+
         # Get logs of specific task
         print(f"\nGetting logs for task {task_id}...")
         logs = get_task_logs_by_id(task_id)
         print(f"Task logs: {json.dumps(logs, indent=2)}")
+
+        input(f"\nPress Enter to send message to task {task_id}...")  # Wait for user input
 
         # Send message to specific task
         print(f"\nSending message to task {task_id}...")

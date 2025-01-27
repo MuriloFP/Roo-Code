@@ -10,7 +10,6 @@ This example demonstrates:
 
 import requests
 import json
-import time
 
 # Configuration
 API_BASE_URL = "http://localhost:3002/api"  # Adjust port as needed
@@ -65,16 +64,21 @@ def main():
     )
     print(f"Task created: {json.dumps(result, indent=2)}")
 
+    input("\nPress Enter to send follow-up message...")  # Wait for user input
+
     # Send a follow-up message
     print("\nSending follow-up message...")
     result = send_message("Can you help me with a Python script to print out a poem about a cat?")
     print(f"Message sent: {json.dumps(result, indent=2)}")
 
+    input("\nPress Enter to check task status...")  # Wait for user input
 
     # Get task status
     print("\nChecking task status...")
     status = get_task_status()
     print(f"Current status: {json.dumps(status, indent=2)}")
+
+    input("\nPress Enter to get conversation logs...")  # Wait for user input
 
     # Get conversation logs
     print("\nGetting conversation logs...")

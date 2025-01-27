@@ -12,7 +12,7 @@ import requests
 import json
 
 # Configuration
-API_BASE_URL = "http://localhost:3000/api"  # Adjust port as needed
+API_BASE_URL = "http://localhost:3002/api"  # Adjust port as needed
 
 def list_modes():
     """List all available modes (built-in and custom)."""
@@ -58,20 +58,28 @@ def main():
     modes = list_modes()
     print(f"Available modes: {json.dumps(modes, indent=2)}")
 
+    input("\nPress Enter to get current mode...")  # Wait for user input
+
     # Get current mode
     print("\nGetting current mode...")
     current_mode = get_current_mode()
     print(f"Current mode: {json.dumps(current_mode, indent=2)}")
+
+    input("\nPress Enter to switch to architect mode...")  # Wait for user input
 
     # Switch to architect mode
     print("\nSwitching to architect mode...")
     result = switch_mode("architect")
     print(f"Switch result: {json.dumps(result, indent=2)}")
 
+    input("\nPress Enter to list profiles...")  # Wait for user input
+
     # List all available profiles
     print("\nListing available profiles...")
     profiles = list_profiles()
     print(f"Available profiles: {json.dumps(profiles, indent=2)}")
+
+    input("\nPress Enter to get current profile...")  # Wait for user input
 
     # Get current profile
     print("\nGetting current profile...")
@@ -80,6 +88,8 @@ def main():
 
     # Switch to a different profile (if available)
     if len(profiles) > 1:
+        input("\nPress Enter to switch profile...")  # Wait for user input
+
         # Switch to the first profile that's not current
         new_profile = next(
             p["name"] for p in profiles 

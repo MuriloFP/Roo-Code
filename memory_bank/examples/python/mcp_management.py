@@ -11,7 +11,7 @@ import requests
 import json
 
 # Configuration
-API_BASE_URL = "http://localhost:3000/api"  # Adjust port as needed
+API_BASE_URL = "http://localhost:3002/api"  # Adjust port as needed
 
 def list_mcps():
     """List all available MCPs with their status."""
@@ -39,21 +39,29 @@ def main():
     print(f"Available MCPs: {json.dumps(mcps, indent=2)}")
 
     if mcps:
+        input("\nPress Enter to get MCP details...")  # Wait for user input
+        
         # Get details of first MCP
         mcp_id = mcps[0]["id"]
         print(f"\nGetting details for MCP '{mcp_id}'...")
         details = get_mcp_details(mcp_id)
         print(f"MCP details: {json.dumps(details, indent=2)}")
-
+        
+        input("\nPress Enter to disable MCP...")  # Wait for user input
+        
         # Disable the MCP
         print(f"\nDisabling MCP '{mcp_id}'...")
         result = set_mcp_status(mcp_id, False)
         print(f"Disable result: {json.dumps(result, indent=2)}")
 
+        input("\nPress Enter to re-enable MCP...")  # Wait for user input
+
         # Re-enable the MCP
         print(f"\nRe-enabling MCP '{mcp_id}'...")
         result = set_mcp_status(mcp_id, True)
         print(f"Enable result: {json.dumps(result, indent=2)}")
+
+        input("\nPress Enter for final status check...")  # Wait for user input
 
         # Verify final status
         print(f"\nVerifying final status of MCP '{mcp_id}'...")
