@@ -486,6 +486,85 @@ describe("ExternalApiServer", () => {
 		})
 	})
 
+	describe("POST /api/messages/:id", () => {
+		beforeEach(() => {
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockResolvedValue({
+				historyItem: { id: "test-task-id" },
+				uiMessagesFilePath: "/test/path/messages.json",
+			})
+			mockClineApi.sendMessage = jest.fn().mockResolvedValue(undefined)
+		})
+
+		it("should send message to specific task successfully", async () => {
+			const message = "test message"
+			const images = ["image1.png"]
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/messages/test-task-id",
+				body: { message, images },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({ success: true })
+			expect(mockClineApi.sidebarProvider.getTaskWithId).toHaveBeenCalledWith("test-task-id")
+			expect(mockClineApi.sendMessage).toHaveBeenCalledWith(message, images)
+		})
+
+		it("should return 404 when task is not found", async () => {
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockRejectedValue(new Error("Task not found"))
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/messages/non-existent-id",
+				body: { message: "test" },
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("Task not found")
+		})
+
+		it("should validate message format", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/messages/test-task-id",
+				body: { message: 123 },
+			})
+
+			expect(response.status).toBe(400)
+			expect(response.body.error).toBe("Invalid message format")
+		})
+
+		it("should validate images format", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/messages/test-task-id",
+				body: { message: "test", images: "not-an-array" },
+			})
+
+			expect(response.status).toBe(400)
+			expect(response.body.error).toBe("Invalid images format")
+		})
+
+		it("should handle errors", async () => {
+			mockClineApi.sendMessage.mockRejectedValue(new Error("test error"))
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/messages/test-task-id",
+				body: { message: "test" },
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to send message")
+		})
+	})
+
 	describe("GET /api/modes", () => {
 		it("should return all available modes", async () => {
 			// Mock custom modes

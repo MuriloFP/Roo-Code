@@ -272,6 +272,7 @@ Send a message to a specific task conversation.
 **Status Codes**
 
 - `200`: Success
+- `400`: Invalid request body
 - `404`: Task not found
 - `500`: Server error
 

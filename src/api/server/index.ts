@@ -336,6 +336,36 @@ export class ExternalApiServer {
 			}
 		})
 
+		// Send message to specific task
+		this.app.post("/api/messages/:id", async (req: Request, res: Response) => {
+			try {
+				const { id } = req.params
+				const { message, images } = req.body
+
+				// Validate message format
+				if (message !== undefined && typeof message !== "string") {
+					return res.status(400).json({ error: "Invalid message format" })
+				}
+				if (images !== undefined && !Array.isArray(images)) {
+					return res.status(400).json({ error: "Invalid images format" })
+				}
+
+				// Verify task exists
+				try {
+					await this.clineApi.sidebarProvider.getTaskWithId(id)
+				} catch (error) {
+					return res.status(404).json({ error: "Task not found" })
+				}
+
+				// Send message
+				await this.clineApi.sendMessage(message, images)
+				return res.json({ success: true })
+			} catch (error) {
+				console.error("Error sending message:", error)
+				return res.status(500).json({ error: "Failed to send message" })
+			}
+		})
+
 		// Get task status
 		this.app.get("/api/tasks/status", async (req, res) => {
 			try {
