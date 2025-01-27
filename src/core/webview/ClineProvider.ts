@@ -93,6 +93,7 @@ type GlobalStateKey =
 	| "openAiStreamingEnabled"
 	| "openRouterModelId"
 	| "openRouterModelInfo"
+	| "openRouterBaseUrl"
 	| "openRouterUseMiddleOutTransform"
 	| "allowedCommands"
 	| "soundEnabled"
@@ -187,10 +188,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		return findLast(Array.from(this.activeInstances), (instance) => instance.view?.visible === true)
 	}
 
-	public static async handleCodeAction(
-		promptType: keyof typeof ACTION_NAMES,
-		params: Record<string, string | any[]>,
-	): Promise<void> {
+	public static async getInstance(): Promise<ClineProvider | undefined> {
 		let visibleProvider = ClineProvider.getVisibleInstance()
 
 		// If no visible provider, try to show the sidebar view
@@ -206,9 +204,45 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			return
 		}
 
+		return visibleProvider
+	}
+
+	public static async isActiveTask(): Promise<boolean> {
+		const visibleProvider = await ClineProvider.getInstance()
+		if (!visibleProvider) {
+			return false
+		}
+
+		if (visibleProvider.cline) {
+			return true
+		}
+
+		return false
+	}
+
+	public static async handleCodeAction(
+		command: string,
+		promptType: keyof typeof ACTION_NAMES,
+		params: Record<string, string | any[]>,
+	): Promise<void> {
+		const visibleProvider = await ClineProvider.getInstance()
+		if (!visibleProvider) {
+			return
+		}
+
 		const { customSupportPrompts } = await visibleProvider.getState()
 
 		const prompt = supportPrompt.create(promptType, params, customSupportPrompts)
+
+		if (visibleProvider.cline && command.endsWith("InCurrentTask")) {
+			await visibleProvider.postMessageToWebview({
+				type: "invoke",
+				invoke: "sendMessage",
+				text: prompt,
+			})
+
+			return
+		}
 
 		await visibleProvider.initClineWithTask(prompt)
 	}
@@ -1191,6 +1225,16 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 							)
 						}
 						break
+					case "updateMcpTimeout":
+						if (message.serverName && typeof message.timeout === "number") {
+							try {
+								await this.mcpHub?.updateServerTimeout(message.serverName, message.timeout)
+							} catch (error) {
+								console.error(`Failed to update timeout for ${message.serverName}:`, error)
+								vscode.window.showErrorMessage(`Failed to update server timeout`)
+							}
+						}
+						break
 					case "updateCustomMode":
 						if (message.modeConfig) {
 							await this.customModesManager.updateCustomMode(message.modeConfig.slug, message.modeConfig)
@@ -1308,6 +1352,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			azureApiVersion,
 			openAiStreamingEnabled,
 			openRouterModelId,
+			openRouterBaseUrl,
 			openRouterModelInfo,
 			openRouterUseMiddleOutTransform,
 			vsCodeLmModelSelector,
@@ -1346,6 +1391,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		await this.updateGlobalState("openAiStreamingEnabled", openAiStreamingEnabled)
 		await this.updateGlobalState("openRouterModelId", openRouterModelId)
 		await this.updateGlobalState("openRouterModelInfo", openRouterModelInfo)
+		await this.updateGlobalState("openRouterBaseUrl", openRouterBaseUrl)
 		await this.updateGlobalState("openRouterUseMiddleOutTransform", openRouterUseMiddleOutTransform)
 		await this.updateGlobalState("vsCodeLmModelSelector", vsCodeLmModelSelector)
 		await this.storeSecret("mistralApiKey", mistralApiKey)
@@ -1973,6 +2019,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			openAiStreamingEnabled,
 			openRouterModelId,
 			openRouterModelInfo,
+			openRouterBaseUrl,
 			openRouterUseMiddleOutTransform,
 			lastShownAnnouncementId,
 			customInstructions,
@@ -2041,6 +2088,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			this.getGlobalState("openAiStreamingEnabled") as Promise<boolean | undefined>,
 			this.getGlobalState("openRouterModelId") as Promise<string | undefined>,
 			this.getGlobalState("openRouterModelInfo") as Promise<ModelInfo | undefined>,
+			this.getGlobalState("openRouterBaseUrl") as Promise<string | undefined>,
 			this.getGlobalState("openRouterUseMiddleOutTransform") as Promise<boolean | undefined>,
 			this.getGlobalState("lastShownAnnouncementId") as Promise<string | undefined>,
 			this.getGlobalState("customInstructions") as Promise<string | undefined>,
@@ -2126,6 +2174,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				openAiStreamingEnabled,
 				openRouterModelId,
 				openRouterModelInfo,
+				openRouterBaseUrl,
 				openRouterUseMiddleOutTransform,
 				vsCodeLmModelSelector,
 			},

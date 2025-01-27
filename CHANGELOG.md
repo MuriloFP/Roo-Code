@@ -1,5 +1,24 @@
 # Roo Code Changelog
 
+## [3.3.4]
+
+- Add per-server MCP network timeout configuration ranging from 15 seconds to an hour
+- Speed up diff editing (thanks @hannesrudolph and @KyleHerndon!)
+- Add option to perform explain/improve/fix code actions either in the existing task or a new task (thanks @samhvw8!)
+
+## [3.3.3]
+
+- Throw errors sooner when a mode tries to write a restricted file
+- Styling improvements to the mode/configuration dropdowns (thanks @psv2522!)
+
+## [3.3.2]
+
+- Add a dropdown to select the API configuration for a mode in the Prompts tab
+- Fix bug where always allow wasn't showing up for MCP tools
+- Improve OpenRouter DeepSeek-R1 integration by setting temperature to the recommended 0.6 and displaying the reasoning output (thanks @Szpadel - it's really fascinating to watch!)
+- Allow specifying a custom OpenRouter base URL (thanks @dairui1!)
+- Make the UI for nested settings nicer (thanks @PretzelVector!)
+
 ## [3.3.1]
 
 - Fix issue where the terminal management system was creating unnecessary new terminals (thanks @evan-fannin!)
