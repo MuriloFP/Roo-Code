@@ -374,10 +374,16 @@ export class ExternalApiServer {
 									lastStatus === "needs_input" ||
 									lastStatus === "needs_approval"
 								) {
+									const lastMessage = uiMessages[uiMessages.length - 1]
+									const formattedLastMessage =
+										lastMessage?.type === "ask"
+											? `ask ${lastMessage.ask}: ${lastMessage.text}`
+											: lastMessage?.text || null
+
 									return res.json({
 										id: currentTaskId,
 										status: lastStatus,
-										lastMessage: lastMessageText,
+										lastMessage: formattedLastMessage,
 									})
 								}
 							}
@@ -471,11 +477,16 @@ export class ExternalApiServer {
 				const taskData = await this.clineApi.sidebarProvider.getTaskWithId(currentTaskId)
 				const uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
 				const status = determineTaskStatus(uiMessages)
+				const lastMessage = uiMessages[uiMessages.length - 1]
+				const formattedLastMessage =
+					lastMessage?.type === "ask"
+						? `ask ${lastMessage.ask}: ${lastMessage.text}`
+						: lastMessage?.text || null
 
 				return res.json({
 					id: currentTaskId,
 					status,
-					lastMessage: uiMessages[uiMessages.length - 1]?.text || null,
+					lastMessage: formattedLastMessage,
 				})
 			} catch (error) {
 				console.error("Error getting task status:", error)
@@ -488,11 +499,16 @@ export class ExternalApiServer {
 				const taskData = await this.clineApi.sidebarProvider.getTaskWithId(req.params.id)
 				const uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
 				const status = determineTaskStatus(uiMessages)
+				const lastMessage = uiMessages[uiMessages.length - 1]
+				const formattedLastMessage =
+					lastMessage?.type === "ask"
+						? `ask ${lastMessage.ask}: ${lastMessage.text}`
+						: lastMessage?.text || null
 
 				return res.json({
 					id: req.params.id,
 					status,
-					lastMessage: uiMessages[uiMessages.length - 1]?.text || null,
+					lastMessage: formattedLastMessage,
 				})
 			} catch (error) {
 				if (error instanceof Error && error.message === "Task not found") {

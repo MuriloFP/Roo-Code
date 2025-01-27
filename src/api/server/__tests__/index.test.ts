@@ -1032,7 +1032,7 @@ describe("ExternalApiServer", () => {
 			expect(response.body).toEqual({
 				id: "test-task-id",
 				status: "needs_approval",
-				lastMessage: "Do you want to run this command?",
+				lastMessage: "ask command: Do you want to run this command?",
 			})
 			expect(mockClineApi.sidebarProvider.getTaskWithId).toHaveBeenCalledWith("test-task-id")
 		})
