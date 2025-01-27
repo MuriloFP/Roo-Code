@@ -89,6 +89,7 @@ export class ExternalApiServer {
 	 * - GET /api/mcps: Get all MCPs with their status
 	 * - GET /api/mcps/:id: Get detailed MCP information
 	 * - POST /api/mcps/:id/status: Enable/disable an MCP
+	 * - POST /api/tasks/:id/respond: Respond to a task action (approve/reject)
 	 */
 	private setupRoutes(): void {
 		// Get custom instructions
@@ -250,7 +251,22 @@ export class ExternalApiServer {
 				return "waiting_for_response"
 			}
 
-			const lastMessage = messages[messages.length - 1]
+			// Skip empty completion_result message at the end
+			let lastMessageIndex = messages.length - 1
+			if (
+				messages[lastMessageIndex].type === "ask" &&
+				messages[lastMessageIndex].ask === "completion_result" &&
+				!messages[lastMessageIndex].text
+			) {
+				lastMessageIndex--
+			}
+
+			// If we've gone past the beginning of the array, return waiting
+			if (lastMessageIndex < 0) {
+				return "waiting_for_response"
+			}
+
+			const lastMessage = messages[lastMessageIndex]
 
 			// Check for error state
 			if (lastMessage.type === "say" && lastMessage.say === "error") {
@@ -811,6 +827,89 @@ export class ExternalApiServer {
 			} catch (error) {
 				console.error("Error updating MCP status:", error)
 				return res.status(500).json({ error: "Failed to update MCP status" })
+			}
+		})
+
+		// Respond to task action (approve/reject)
+		this.app.post("/api/tasks/respond", async (req: Request, res: Response) => {
+			try {
+				const { response } = req.body
+
+				// Validate response
+				if (response !== "approve" && response !== "reject") {
+					return res.status(400).json({ error: "response must be either 'approve' or 'reject'" })
+				}
+
+				// Get current task ID
+				const taskHistory =
+					((await this.clineApi.sidebarProvider.getGlobalState("taskHistory")) as
+						| HistoryItem[]
+						| undefined) || []
+				if (taskHistory.length === 0) {
+					return res.status(404).json({ error: "No active task found" })
+				}
+				const currentTaskId = taskHistory[taskHistory.length - 1].id
+
+				// Get task status to verify it needs approval
+				const taskData = await this.clineApi.sidebarProvider.getTaskWithId(currentTaskId)
+				const uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
+				const status = determineTaskStatus(uiMessages)
+
+				if (status !== "needs_approval") {
+					return res.status(400).json({ error: "Task is not in a state that needs approval" })
+				}
+
+				// Send appropriate response
+				if (response === "approve") {
+					await this.clineApi.pressPrimaryButton()
+				} else {
+					await this.clineApi.pressSecondaryButton()
+				}
+
+				return res.json({ success: true })
+			} catch (error) {
+				if (error instanceof Error && error.message === "Task not found") {
+					return res.status(404).json({ error: "No active task found" })
+				}
+				console.error("Error responding to task:", error)
+				return res.status(500).json({ error: "Failed to respond to task" })
+			}
+		})
+
+		// Respond to task action (approve/reject)
+		this.app.post("/api/tasks/:id/respond", async (req: Request, res: Response) => {
+			try {
+				const { id } = req.params
+				const { response } = req.body
+
+				// Validate response
+				if (response !== "approve" && response !== "reject") {
+					return res.status(400).json({ error: "response must be either 'approve' or 'reject'" })
+				}
+
+				// Get task status to verify it needs approval
+				const taskData = await this.clineApi.sidebarProvider.getTaskWithId(id)
+				const uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
+				const status = determineTaskStatus(uiMessages)
+
+				if (status !== "needs_approval") {
+					return res.status(400).json({ error: "Task is not in a state that needs approval" })
+				}
+
+				// Send appropriate response
+				if (response === "approve") {
+					await this.clineApi.pressPrimaryButton()
+				} else {
+					await this.clineApi.pressSecondaryButton()
+				}
+
+				return res.json({ success: true })
+			} catch (error) {
+				if (error instanceof Error && error.message === "Task not found") {
+					return res.status(404).json({ error: "Task not found" })
+				}
+				console.error("Error responding to task:", error)
+				return res.status(500).json({ error: "Failed to respond to task" })
 			}
 		})
 	}

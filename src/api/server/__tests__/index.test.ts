@@ -1703,4 +1703,192 @@ describe("ExternalApiServer", () => {
 			expect(response.body.error).toBe("Failed to update MCP status")
 		})
 	})
+
+	describe("POST /api/tasks/respond", () => {
+		beforeEach(() => {
+			// Mock task data for testing
+			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockResolvedValue([
+				{ id: "test-task-1", ts: 1000 },
+				{ id: "test-task-2", ts: 2000 },
+			])
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockResolvedValue({
+				uiMessagesFilePath: "test/path",
+			})
+			jest.spyOn(fs, "readFile").mockResolvedValue(
+				JSON.stringify([
+					{
+						type: "ask",
+						ask: "command",
+						text: "Do you want to run this command?",
+					},
+				]),
+			)
+		})
+
+		it("should approve current task action successfully", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks/respond",
+				body: { response: "approve" },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({ success: true })
+			expect(mockClineApi.pressPrimaryButton).toHaveBeenCalled()
+		})
+
+		it("should reject current task action successfully", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks/respond",
+				body: { response: "reject" },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({ success: true })
+			expect(mockClineApi.pressSecondaryButton).toHaveBeenCalled()
+		})
+
+		it("should return 400 for invalid response value", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks/respond",
+				body: { response: "invalid" },
+			})
+
+			expect(response.status).toBe(400)
+			expect(response.body.error).toBe("response must be either 'approve' or 'reject'")
+		})
+
+		it("should return 400 when task does not need approval", async () => {
+			jest.spyOn(fs, "readFile").mockResolvedValue(
+				JSON.stringify([
+					{
+						type: "say",
+						say: "task",
+						text: "Task Completed",
+					},
+				]),
+			)
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks/respond",
+				body: { response: "approve" },
+			})
+
+			expect(response.status).toBe(400)
+			expect(response.body.error).toBe("Task is not in a state that needs approval")
+		})
+
+		it("should return 404 when no tasks exist", async () => {
+			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockResolvedValue([])
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks/respond",
+				body: { response: "approve" },
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("No active task found")
+		})
+	})
+
+	describe("POST /api/tasks/:id/respond", () => {
+		beforeEach(() => {
+			// Mock task data for testing
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockResolvedValue({
+				uiMessagesFilePath: "test/path",
+			})
+			jest.spyOn(fs, "readFile").mockResolvedValue(
+				JSON.stringify([
+					{
+						type: "ask",
+						ask: "command",
+						text: "Do you want to run this command?",
+					},
+				]),
+			)
+		})
+
+		it("should approve task action successfully", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks/test-id/respond",
+				body: { response: "approve" },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({ success: true })
+			expect(mockClineApi.pressPrimaryButton).toHaveBeenCalled()
+		})
+
+		it("should reject task action successfully", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks/test-id/respond",
+				body: { response: "reject" },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({ success: true })
+			expect(mockClineApi.pressSecondaryButton).toHaveBeenCalled()
+		})
+
+		it("should return 400 for invalid response value", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks/test-id/respond",
+				body: { response: "invalid" },
+			})
+
+			expect(response.status).toBe(400)
+			expect(response.body.error).toBe("response must be either 'approve' or 'reject'")
+		})
+
+		it("should return 400 when task does not need approval", async () => {
+			jest.spyOn(fs, "readFile").mockResolvedValue(
+				JSON.stringify([
+					{
+						type: "say",
+						say: "task",
+						text: "Task Completed",
+					},
+				]),
+			)
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks/test-id/respond",
+				body: { response: "approve" },
+			})
+
+			expect(response.status).toBe(400)
+			expect(response.body.error).toBe("Task is not in a state that needs approval")
+		})
+
+		it("should return 404 when task is not found", async () => {
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockRejectedValue(new Error("Task not found"))
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks/test-id/respond",
+				body: { response: "approve" },
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("Task not found")
+		})
+	})
 })
