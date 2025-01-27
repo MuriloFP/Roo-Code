@@ -1838,9 +1838,13 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			enhancementApiConfigId,
 			experimentalDiffStrategy,
 			autoApprovalEnabled,
+			customModes,
 		} = await this.getState()
 
 		const allowedCommands = vscode.workspace.getConfiguration("roo-cline").get<string[]>("allowedCommands") || []
+		const externalApiEnabled =
+			vscode.workspace.getConfiguration("roo-cline.externalApi").get<boolean>("enabled") || false
+		const externalApiPort = vscode.workspace.getConfiguration("roo-cline.externalApi").get<number>("port") || 3000
 
 		return {
 			version: this.context.extension?.packageJSON?.version ?? "",
@@ -1853,32 +1857,32 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			alwaysAllowMcp: alwaysAllowMcp ?? false,
 			uriScheme: vscode.env.uriScheme,
 			clineMessages: this.cline?.clineMessages || [],
-			taskHistory: (taskHistory || [])
-				.filter((item: HistoryItem) => item.ts && item.task)
-				.sort((a: HistoryItem, b: HistoryItem) => b.ts - a.ts),
+			taskHistory: taskHistory || [],
+			shouldShowAnnouncement: lastShownAnnouncementId !== this.context.extension?.packageJSON?.version,
+			allowedCommands,
 			soundEnabled: soundEnabled ?? false,
 			diffEnabled: diffEnabled ?? true,
-			shouldShowAnnouncement: lastShownAnnouncementId !== this.latestAnnouncementId,
-			allowedCommands,
 			soundVolume: soundVolume ?? 0.5,
 			browserViewportSize: browserViewportSize ?? "900x600",
 			screenshotQuality: screenshotQuality ?? 75,
+			fuzzyMatchThreshold: fuzzyMatchThreshold ?? 1.0,
 			preferredLanguage: preferredLanguage ?? "English",
 			writeDelayMs: writeDelayMs ?? 1000,
 			terminalOutputLineLimit: terminalOutputLineLimit ?? 500,
-			fuzzyMatchThreshold: fuzzyMatchThreshold ?? 1.0,
 			mcpEnabled: mcpEnabled ?? true,
 			alwaysApproveResubmit: alwaysApproveResubmit ?? false,
-			requestDelaySeconds: requestDelaySeconds ?? 10,
+			requestDelaySeconds: requestDelaySeconds ?? 5,
 			currentApiConfigName: currentApiConfigName ?? "default",
-			listApiConfigMeta: listApiConfigMeta ?? [],
-			mode: mode ?? defaultModeSlug,
-			customModePrompts: customModePrompts ?? {},
-			customSupportPrompts: customSupportPrompts ?? {},
-			enhancementApiConfigId,
+			listApiConfigMeta: listApiConfigMeta || [],
+			mode: mode ?? "default",
+			customModePrompts: customModePrompts || {},
+			customSupportPrompts: customSupportPrompts || {},
+			enhancementApiConfigId: enhancementApiConfigId ?? "",
 			experimentalDiffStrategy: experimentalDiffStrategy ?? false,
 			autoApprovalEnabled: autoApprovalEnabled ?? false,
-			customModes: await this.customModesManager.getCustomModes(),
+			customModes: customModes || [],
+			externalApiEnabled,
+			externalApiPort,
 		}
 	}
 

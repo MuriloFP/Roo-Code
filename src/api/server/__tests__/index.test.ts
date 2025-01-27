@@ -247,16 +247,39 @@ describe("ExternalApiServer", () => {
 			} as any
 			mockClineApi.sidebarProvider.updateGlobalState = jest.fn().mockResolvedValue(undefined)
 			mockClineApi.sidebarProvider.postStateToWebview = jest.fn().mockResolvedValue(undefined)
-			mockClineApi.sidebarProvider.getGlobalState = jest
-				.fn()
-				.mockResolvedValue([{ id: "task-1", ts: Date.now(), task: "test task" }])
+		})
+
+		it("should wait for task completion when specified", async () => {
+			const message = "test task"
+
+			// Mock task creation and status
+			mockClineApi.startNewTask.mockResolvedValue({ id: "test-task" } as any)
+			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockResolvedValue([{ id: "test-task", ts: 1000 }])
 			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockResolvedValue({
-				uiMessagesFilePath: "test-path",
+				historyItem: { id: "test-task" },
+				uiMessagesFilePath: "/test/path/messages.json",
 			})
 			;(fs.readFile as jest.Mock).mockResolvedValue(
-				JSON.stringify([{ type: "assistant", content: "test response" }]),
+				JSON.stringify([
+					{ ts: 1999, type: "user", text: message },
+					{ ts: 2000, type: "say", say: "task", text: "Task Completed" },
+				]),
 			)
-		})
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks",
+				body: { message, wait_for_completion: true },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({
+				id: "test-task",
+				status: "completed",
+				lastMessage: "Task Completed",
+			})
+		}, 30000)
 
 		it("should start task successfully with basic parameters", async () => {
 			const message = "test task"
@@ -307,25 +330,6 @@ describe("ExternalApiServer", () => {
 			expect(response.body).toEqual({ success: true })
 			expect(mockClineApi.sidebarProvider.configManager.setCurrentConfig).toHaveBeenCalledWith(profile)
 			expect(mockClineApi.sidebarProvider.updateGlobalState).toHaveBeenCalledWith("currentApiConfigName", profile)
-			expect(mockClineApi.startNewTask).toHaveBeenCalledWith(message, undefined)
-		})
-
-		it("should wait for task completion when specified", async () => {
-			const message = "test task"
-
-			const response = await retryRequest({
-				port,
-				method: "POST",
-				path: "/api/tasks",
-				body: { message, wait_for_completion: true },
-			})
-
-			expect(response.status).toBe(200)
-			expect(response.body).toEqual({
-				id: "task-1",
-				status: "waiting_for_approval",
-				lastMessage: "test response",
-			})
 			expect(mockClineApi.startNewTask).toHaveBeenCalledWith(message, undefined)
 		})
 
@@ -939,7 +943,7 @@ describe("ExternalApiServer", () => {
 
 	describe("GET /api/tasks/status", () => {
 		beforeEach(() => {
-			// Mock the task history and data
+			// Mock the task history and data for error state
 			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockResolvedValue([
 				{ id: "task-1", ts: 1000 },
 				{ id: "task-2", ts: 2000 },
@@ -950,8 +954,8 @@ describe("ExternalApiServer", () => {
 			})
 			;(fs.readFile as jest.Mock).mockResolvedValue(
 				JSON.stringify([
-					{ type: "assistant", content: "Hello" },
-					{ type: "user", content: "Hi" },
+					{ ts: 1999, type: "user", text: "Hi" },
+					{ ts: 2000, type: "say", say: "error", text: "An error occurred" },
 				]),
 			)
 		})
@@ -966,8 +970,8 @@ describe("ExternalApiServer", () => {
 			expect(response.status).toBe(200)
 			expect(response.body).toEqual({
 				id: "task-2",
-				status: "waiting_for_response",
-				lastMessage: "Hi",
+				status: "error",
+				lastMessage: "An error occurred",
 			})
 			expect(mockClineApi.sidebarProvider.getGlobalState).toHaveBeenCalledWith("taskHistory")
 			expect(mockClineApi.sidebarProvider.getTaskWithId).toHaveBeenCalledWith("task-2")
@@ -1004,15 +1008,15 @@ describe("ExternalApiServer", () => {
 
 	describe("GET /api/tasks/:id/status", () => {
 		beforeEach(() => {
-			// Mock the task data
+			// Mock the task data for needs_approval state
 			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockResolvedValue({
 				historyItem: { id: "test-task-id" },
 				uiMessagesFilePath: "/test/path/messages.json",
 			})
 			;(fs.readFile as jest.Mock).mockResolvedValue(
 				JSON.stringify([
-					{ type: "assistant", content: "Hello" },
-					{ type: "user", content: "Hi" },
+					{ ts: 1999, type: "user", text: "Hi" },
+					{ ts: 2000, type: "ask", ask: "command", text: "Do you want to run this command?" },
 				]),
 			)
 		})
@@ -1027,8 +1031,8 @@ describe("ExternalApiServer", () => {
 			expect(response.status).toBe(200)
 			expect(response.body).toEqual({
 				id: "test-task-id",
-				status: "waiting_for_response",
-				lastMessage: "Hi",
+				status: "needs_approval",
+				lastMessage: "Do you want to run this command?",
 			})
 			expect(mockClineApi.sidebarProvider.getTaskWithId).toHaveBeenCalledWith("test-task-id")
 		})
@@ -1076,8 +1080,8 @@ describe("ExternalApiServer", () => {
 				if (path.endsWith("messages.json")) {
 					return Promise.resolve(
 						JSON.stringify([
-							{ type: "assistant", content: "Hello" },
-							{ type: "user", content: "Hi" },
+							{ ts: 1999, type: "user", text: "Hi" },
+							{ ts: 2000, type: "say", say: "text", text: "Hello" },
 						]),
 					)
 				}
@@ -1104,8 +1108,8 @@ describe("ExternalApiServer", () => {
 			expect(response.body).toEqual({
 				id: "task-2",
 				messages: [
-					{ type: "assistant", content: "Hello" },
-					{ type: "user", content: "Hi" },
+					{ ts: 1999, type: "user", text: "Hi" },
+					{ ts: 2000, type: "say", say: "text", text: "Hello" },
 				],
 				apiConversation: [
 					{ role: "assistant", content: "API Hello" },
@@ -1157,8 +1161,8 @@ describe("ExternalApiServer", () => {
 				if (path.endsWith("messages.json")) {
 					return Promise.resolve(
 						JSON.stringify([
-							{ type: "assistant", content: "Hello" },
-							{ type: "user", content: "Hi" },
+							{ ts: 1999, type: "user", text: "Hi" },
+							{ ts: 2000, type: "say", say: "text", text: "Hello" },
 						]),
 					)
 				}
@@ -1185,8 +1189,8 @@ describe("ExternalApiServer", () => {
 			expect(response.body).toEqual({
 				id: "test-task-id",
 				messages: [
-					{ type: "assistant", content: "Hello" },
-					{ type: "user", content: "Hi" },
+					{ ts: 1999, type: "user", text: "Hi" },
+					{ ts: 2000, type: "say", say: "text", text: "Hello" },
 				],
 				apiConversation: [
 					{ role: "assistant", content: "API Hello" },

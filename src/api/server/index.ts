@@ -6,6 +6,7 @@ import { Mode, modes, getModeBySlug } from "../../shared/modes"
 import { ModeConfig } from "../../shared/modes"
 import * as fs from "fs/promises"
 import { HistoryItem } from "../../shared/HistoryItem"
+import { ClineMessage } from "../../shared/ExtensionMessage"
 
 /**
  * Configuration options for the external API server
@@ -243,6 +244,42 @@ export class ExternalApiServer {
 			}
 		})
 
+		// Helper function to determine task status from messages
+		function determineTaskStatus(messages: ClineMessage[]): string {
+			if (!messages || messages.length === 0) {
+				return "error"
+			}
+
+			const lastMessage = messages[messages.length - 1]
+
+			// Check for error state
+			if (lastMessage.type === "say" && lastMessage.say === "error") {
+				return "error"
+			}
+
+			// Check for task completion
+			if (
+				lastMessage.type === "say" &&
+				lastMessage.say === "task" &&
+				lastMessage.text?.includes("Task Completed")
+			) {
+				return "completed"
+			}
+
+			// Check for command approval needed
+			if (lastMessage.type === "ask" && lastMessage.ask === "command") {
+				return "needs_approval"
+			}
+
+			// Check for user input needed
+			if (lastMessage.type === "ask") {
+				return "needs_input"
+			}
+
+			// Default to in_progress
+			return "in_progress"
+		}
+
 		// Start new task
 		this.app.post("/api/tasks", async (req: Request, res: Response) => {
 			try {
@@ -289,7 +326,7 @@ export class ExternalApiServer {
 				// Start the task
 				await this.clineApi.startNewTask(message, images)
 
-				// If wait_for_completion is true, wait for task to complete
+				// If wait_for_completion is true, wait for task to complete or need input
 				if (wait_for_completion) {
 					const taskHistory =
 						((await this.clineApi.sidebarProvider.getGlobalState("taskHistory")) as
@@ -299,14 +336,34 @@ export class ExternalApiServer {
 						return res.status(500).json({ error: "Failed to start task" })
 					}
 					const currentTaskId = taskHistory[taskHistory.length - 1].id
-					const taskData = await this.clineApi.sidebarProvider.getTaskWithId(currentTaskId)
-					const uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
-					const lastMessage = uiMessages[uiMessages.length - 1]
 
+					// Poll for task completion (max 120 seconds)
+					let attempts = 0
+					const maxAttempts = 120
+					while (attempts < maxAttempts) {
+						const taskData = await this.clineApi.sidebarProvider.getTaskWithId(currentTaskId)
+						const uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
+						const status = determineTaskStatus(uiMessages)
+
+						// Return if we reach a terminal state or need user interaction
+						if (status !== "in_progress") {
+							return res.json({
+								id: currentTaskId,
+								status,
+								lastMessage: uiMessages[uiMessages.length - 1]?.text || null,
+							})
+						}
+
+						// Wait 1 second before next attempt
+						await new Promise((resolve) => setTimeout(resolve, 1000))
+						attempts++
+					}
+
+					// If we reach here, we timed out waiting for completion
 					return res.json({
 						id: currentTaskId,
-						status: lastMessage?.type === "user" ? "waiting_for_response" : "waiting_for_approval",
-						lastMessage: lastMessage?.content || null,
+						status: "in_progress",
+						lastMessage: "Timeout waiting for initial response",
 					})
 				}
 
@@ -379,12 +436,12 @@ export class ExternalApiServer {
 				const currentTaskId = taskHistory[taskHistory.length - 1].id
 				const taskData = await this.clineApi.sidebarProvider.getTaskWithId(currentTaskId)
 				const uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
-				const lastMessage = uiMessages[uiMessages.length - 1]
+				const status = determineTaskStatus(uiMessages)
 
 				return res.json({
 					id: currentTaskId,
-					status: lastMessage?.type === "user" ? "waiting_for_response" : "waiting_for_approval",
-					lastMessage: lastMessage?.content || null,
+					status,
+					lastMessage: uiMessages[uiMessages.length - 1]?.text || null,
 				})
 			} catch (error) {
 				console.error("Error getting task status:", error)
@@ -396,12 +453,12 @@ export class ExternalApiServer {
 			try {
 				const taskData = await this.clineApi.sidebarProvider.getTaskWithId(req.params.id)
 				const uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
-				const lastMessage = uiMessages[uiMessages.length - 1]
+				const status = determineTaskStatus(uiMessages)
 
 				return res.json({
 					id: req.params.id,
-					status: lastMessage?.type === "user" ? "waiting_for_response" : "waiting_for_approval",
-					lastMessage: lastMessage?.content || null,
+					status,
+					lastMessage: uiMessages[uiMessages.length - 1]?.text || null,
 				})
 			} catch (error) {
 				if (error instanceof Error && error.message === "Task not found") {
