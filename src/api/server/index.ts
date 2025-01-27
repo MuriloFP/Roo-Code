@@ -329,28 +329,56 @@ export class ExternalApiServer {
 				}
 
 				// Start the task
+				const currentHistory =
+					((await this.clineApi.sidebarProvider.getGlobalState("taskHistory")) as
+						| HistoryItem[]
+						| undefined) || []
+				const latestTaskId = currentHistory.length > 0 ? currentHistory[currentHistory.length - 1].id : null
+
 				await this.clineApi.startNewTask(message, images)
 
-				// If wait_for_completion is true, wait for task to complete or need input
-				if (wait_for_completion) {
-					const taskHistory =
+				// Wait for the new task to appear in history (max 30 seconds)
+				let newTaskId: string | null = null
+				let attempts = 0
+				const maxAttempts = 30
+
+				while (attempts < maxAttempts) {
+					const newHistory =
 						((await this.clineApi.sidebarProvider.getGlobalState("taskHistory")) as
 							| HistoryItem[]
 							| undefined) || []
-					if (taskHistory.length === 0) {
-						return res.status(500).json({ error: "Failed to start task" })
-					}
-					const currentTaskId = taskHistory[taskHistory.length - 1].id
 
+					if (newHistory.length === 0) {
+						// If history is empty after task creation, something went wrong
+						throw new Error("Task creation failed - no task history found")
+					}
+
+					const newestTaskId = newHistory[newHistory.length - 1].id
+
+					if (newestTaskId && newestTaskId !== latestTaskId) {
+						newTaskId = newestTaskId
+						break
+					}
+
+					await new Promise((resolve) => setTimeout(resolve, 1000))
+					attempts++
+				}
+
+				if (!newTaskId) {
+					throw new Error("Timeout waiting for task creation")
+				}
+
+				// If wait_for_completion is true, wait for task to complete or need input
+				if (wait_for_completion) {
 					// Poll for task completion (max 120 seconds)
-					let attempts = 0
-					const maxAttempts = 120
+					attempts = 0
+					const maxCompletionAttempts = 120
 					let lastStatus = "waiting_for_response"
 					let lastMessageText = null
 
-					while (attempts < maxAttempts) {
+					while (attempts < maxCompletionAttempts) {
 						try {
-							const taskData = await this.clineApi.sidebarProvider.getTaskWithId(currentTaskId)
+							const taskData = await this.clineApi.sidebarProvider.getTaskWithId(newTaskId)
 							let uiMessages: ClineMessage[] = []
 
 							try {
@@ -381,7 +409,7 @@ export class ExternalApiServer {
 											: lastMessage?.text || null
 
 									return res.json({
-										id: currentTaskId,
+										id: newTaskId,
 										status: lastStatus,
 										lastMessage: formattedLastMessage,
 									})
@@ -401,14 +429,14 @@ export class ExternalApiServer {
 
 					// If we reach here, we timed out waiting for completion
 					return res.json({
-						id: currentTaskId,
+						id: newTaskId,
 						status: lastStatus,
 						lastMessage: lastMessageText || "Timeout waiting for response",
 					})
 				}
 
-				// Return success response if not waiting for completion
-				return res.json({ success: true })
+				// Return success response with task ID if not waiting for completion
+				return res.json({ success: true, id: newTaskId })
 			} catch (error) {
 				console.error("Error starting task:", error)
 				return res.status(500).json({ error: "Failed to start task" })

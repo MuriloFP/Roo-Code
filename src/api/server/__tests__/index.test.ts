@@ -247,14 +247,18 @@ describe("ExternalApiServer", () => {
 			} as any
 			mockClineApi.sidebarProvider.updateGlobalState = jest.fn().mockResolvedValue(undefined)
 			mockClineApi.sidebarProvider.postStateToWebview = jest.fn().mockResolvedValue(undefined)
+			// Mock getGlobalState for task history
+			mockClineApi.sidebarProvider.getGlobalState = jest
+				.fn()
+				.mockResolvedValueOnce([]) // First call - no tasks
+				.mockResolvedValue([{ id: "test-task", ts: 1000 }]) // Subsequent calls - new task exists
 		})
 
 		it("should wait for task completion when specified", async () => {
 			const message = "test task"
 
 			// Mock task creation and status
-			mockClineApi.startNewTask.mockResolvedValue({ id: "test-task" } as any)
-			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockResolvedValue([{ id: "test-task", ts: 1000 }])
+			mockClineApi.startNewTask.mockResolvedValue(undefined)
 			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockResolvedValue({
 				historyItem: { id: "test-task" },
 				uiMessagesFilePath: "/test/path/messages.json",
@@ -293,7 +297,7 @@ describe("ExternalApiServer", () => {
 			})
 
 			expect(response.status).toBe(200)
-			expect(response.body).toEqual({ success: true })
+			expect(response.body).toEqual({ success: true, id: "test-task" })
 			expect(mockClineApi.startNewTask).toHaveBeenCalledWith(message, images)
 		})
 
@@ -310,7 +314,7 @@ describe("ExternalApiServer", () => {
 			})
 
 			expect(response.status).toBe(200)
-			expect(response.body).toEqual({ success: true })
+			expect(response.body).toEqual({ success: true, id: "test-task" })
 			expect(mockClineApi.sidebarProvider.handleModeSwitch).toHaveBeenCalledWith(mode)
 			expect(mockClineApi.startNewTask).toHaveBeenCalledWith(message, undefined)
 		})
@@ -327,7 +331,7 @@ describe("ExternalApiServer", () => {
 			})
 
 			expect(response.status).toBe(200)
-			expect(response.body).toEqual({ success: true })
+			expect(response.body).toEqual({ success: true, id: "test-task" })
 			expect(mockClineApi.sidebarProvider.configManager.setCurrentConfig).toHaveBeenCalledWith(profile)
 			expect(mockClineApi.sidebarProvider.updateGlobalState).toHaveBeenCalledWith("currentApiConfigName", profile)
 			expect(mockClineApi.startNewTask).toHaveBeenCalledWith(message, undefined)

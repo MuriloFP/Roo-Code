@@ -67,8 +67,9 @@ def main():
 
     # Send a follow-up message
     print("\nSending follow-up message...")
-    result = send_message("Can you help me with a Python script?")
+    result = send_message("Can you help me with a Python script to print out a poem about a cat?")
     print(f"Message sent: {json.dumps(result, indent=2)}")
+
 
     # Get task status
     print("\nChecking task status...")
