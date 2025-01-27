@@ -85,6 +85,9 @@ export class ExternalApiServer {
 	 * - GET /api/auto-approve: Get all auto-approve settings
 	 * - POST /api/auto-approve: Update all auto-approve settings
 	 * - POST /api/auto-approve/enabled: Update master auto-approve switch
+	 * - GET /api/mcps: Get all MCPs with their status
+	 * - GET /api/mcps/:id: Get detailed MCP information
+	 * - POST /api/mcps/:id/status: Enable/disable an MCP
 	 */
 	private setupRoutes(): void {
 		// Get custom instructions
@@ -554,6 +557,95 @@ export class ExternalApiServer {
 			} catch (error) {
 				console.error("Error updating auto-approve enabled setting:", error)
 				return res.status(500).json({ error: "Failed to update auto-approve enabled setting" })
+			}
+		})
+
+		// Get all MCPs
+		this.app.get("/api/mcps", async (req: Request, res: Response) => {
+			try {
+				if (!this.clineApi.sidebarProvider.mcpHub) {
+					return res.status(500).json({ error: "MCP Hub not available" })
+				}
+				const servers = this.clineApi.sidebarProvider.mcpHub.getServers()
+				const mcps = servers.map((server) => ({
+					id: server.name,
+					name: server.name,
+					status: server.disabled ? "disabled" : server.status,
+					description: server.error || undefined,
+				}))
+				return res.json(mcps)
+			} catch (error) {
+				console.error("Error getting MCPs:", error)
+				return res.status(500).json({ error: "Failed to get MCPs" })
+			}
+		})
+
+		// Get MCP details
+		this.app.get("/api/mcps/:id", async (req: Request, res: Response) => {
+			try {
+				if (!this.clineApi.sidebarProvider.mcpHub) {
+					return res.status(500).json({ error: "MCP Hub not available" })
+				}
+
+				const { id } = req.params
+				const servers = this.clineApi.sidebarProvider.mcpHub.getServers()
+				const server = servers.find((s) => s.name === id)
+
+				if (!server) {
+					return res.status(404).json({ error: "MCP not found" })
+				}
+
+				return res.json({
+					id: server.name,
+					name: server.name,
+					status: server.disabled ? "disabled" : server.status,
+					description: server.error || undefined,
+					tools:
+						server.tools?.map((tool) => ({
+							name: tool.name,
+							description: tool.description,
+							parameters: tool.inputSchema,
+						})) || [],
+					metadata: {
+						config: JSON.parse(server.config),
+					},
+				})
+			} catch (error) {
+				console.error("Error getting MCP details:", error)
+				return res.status(500).json({ error: "Failed to get MCP details" })
+			}
+		})
+
+		// Update MCP status
+		this.app.post("/api/mcps/:id/status", async (req: Request, res: Response) => {
+			try {
+				if (!this.clineApi.sidebarProvider.mcpHub) {
+					return res.status(500).json({ error: "MCP Hub not available" })
+				}
+
+				const { id } = req.params
+				const { enabled } = req.body
+
+				if (typeof enabled !== "boolean") {
+					return res.status(400).json({ error: "enabled must be a boolean" })
+				}
+
+				const servers = this.clineApi.sidebarProvider.mcpHub.getServers()
+				const server = servers.find((s) => s.name === id)
+
+				if (!server) {
+					return res.status(404).json({ error: "MCP not found" })
+				}
+
+				await this.clineApi.sidebarProvider.mcpHub.toggleServerDisabled(id, !enabled)
+
+				return res.json({
+					success: true,
+					status: enabled ? "enabled" : "disabled",
+				})
+			} catch (error) {
+				console.error("Error updating MCP status:", error)
+				return res.status(500).json({ error: "Failed to update MCP status" })
 			}
 		})
 	}

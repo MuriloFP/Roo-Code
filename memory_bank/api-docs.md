@@ -244,6 +244,37 @@ Send a message in the current task.
 }
 ```
 
+#### POST /api/messages/:id
+
+Send a message to a specific task conversation.
+
+**Parameters**
+
+- `id` (path): The unique identifier of the task
+
+**Request Body**
+
+```json
+{
+	"message": "string",
+	"images": ["string"]
+}
+```
+
+**Response**
+
+```json
+{
+	"success": true
+}
+```
+
+**Status Codes**
+
+- `200`: Success
+- `404`: Task not found
+- `500`: Server error
+
 ### Modes
 
 #### GET /api/modes
@@ -376,7 +407,7 @@ Update the master auto-approve switch.
 }
 ```
 
-### MCP Settings (Coming Soon)
+### MCP (Model Context Protocol)
 
 #### GET /api/mcps
 
@@ -386,14 +417,21 @@ List all available MCPs.
 
 ```json
 [
-    {
-        "id": "string",
-        "name": "string",
-        "status": "enabled" | "disabled",
-        "description": "string"
-    }
+	{
+		"id": "string",
+		"name": "string",
+		"status": "string",
+		"description": "string"
+	}
 ]
 ```
+
+Status values:
+
+- `connected`: MCP is connected and ready
+- `connecting`: MCP is in the process of connecting
+- `disconnected`: MCP is not connected
+- `error`: MCP encountered an error
 
 #### GET /api/mcps/:id
 
@@ -407,24 +445,31 @@ Get detailed information about a specific MCP.
 
 ```json
 {
-    "id": "string",
-    "name": "string",
-    "status": "enabled" | "disabled",
-    "description": "string",
-    "tools": [
-        {
-            "name": "string",
-            "description": "string",
-            "parameters": {}
-        }
-    ],
-    "metadata": {}
+	"id": "string",
+	"name": "string",
+	"status": "string",
+	"description": "string",
+	"tools": [
+		{
+			"name": "string",
+			"description": "string",
+			"parameters": {
+				"type": "object"
+				// Additional JSON schema properties
+			}
+		}
+	],
+	"metadata": {
+		"config": {
+			// MCP-specific configuration
+		}
+	}
 }
 ```
 
 #### POST /api/mcps/:id/status
 
-Enable or disable a specific MCP.
+Enable or disable an MCP.
 
 **Parameters**
 

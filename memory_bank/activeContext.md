@@ -2,52 +2,60 @@
 
 ## Recent Changes
 
-- Implemented auto-approve settings endpoints:
-    - GET /api/auto-approve: Get current settings
-    - POST /api/auto-approve: Update all settings
-    - POST /api/auto-approve/enabled: Toggle master switch
-- Added comprehensive test coverage for auto-approve endpoints
-- Updated API documentation with auto-approve endpoints
-- All tests passing (61 tests)
+1. MCP Management Implementation (Complete)
+
+    - Added GET /api/mcps endpoint for listing MCPs
+    - Added GET /api/mcps/:id endpoint for MCP details
+    - Added POST /api/mcps/:id/status for enabling/disabling MCPs
+    - Implemented comprehensive test coverage (81 passing tests)
+    - Updated API documentation with MCP endpoints
+
+2. Task Creation Enhancement (Complete)
+    - Extended POST /api/tasks endpoint with new parameters:
+        - mode: Switch to specific mode before task
+        - profile: Switch to specific profile before task
+        - wait_for_completion: Wait for task completion
+    - Added full test coverage for new parameters
+    - Updated API documentation
 
 ## Current Focus
 
-Task Enhancement Implementation:
+Message Sending Enhancement:
 
-- Planning to extend POST /api/tasks endpoint with additional parameters
-- Researching streaming response implementation
-- Need to consider:
-    - What new parameters to add
-    - How to implement streaming responses
-    - Best practices for timeout handling
-    - Integration with auto-approve settings
+- Implementing POST /api/messages/:id endpoint
+- This will allow sending messages to specific task conversations
+- Currently, messages can only be sent to the active conversation
 
 ## Next Steps
 
-1. Design new parameters for POST /api/tasks:
+1. Message Sending Implementation:
 
-    - Research required parameters
-    - Consider backward compatibility
-    - Plan validation requirements
+    - Design and implement POST /api/messages/:id endpoint
+    - Add task existence validation
+    - Add message format validation
+    - Implement error handling for non-existent tasks
+    - Add comprehensive tests
+    - Update documentation
 
-2. Research streaming response implementation:
+2. Important Notes:
+    - Ensure backward compatibility with existing message sending
+    - Consider performance implications for large conversations
+    - Maintain consistent error handling patterns
+    - Follow existing test structure for new endpoint
 
-    - Evaluate WebSocket vs Server-Sent Events
-    - Consider impact on existing code
-    - Plan testing approach
+## Dependencies
 
-3. Implementation:
-    - Add new parameters to task creation
-    - Implement streaming if decided
-    - Add timeout handling
-    - Update tests and documentation
+- Requires access to task history for validation
+- Uses existing message format validation
+- Follows current error handling patterns
+- Integrates with existing test infrastructure
 
-## Notes
+## Security Considerations
 
-- All auto-approve functionality is now complete and tested
-- Need to maintain backward compatibility when adding new task parameters
-- Consider performance implications of streaming responses
-- Keep security in mind when implementing new features
+- Validate task IDs to prevent unauthorized access
+- Maintain existing CORS protection
+- Consider rate limiting for message endpoints
+- Ensure proper error message sanitization
 
 # Current Work: External API Expansion
 

@@ -1379,4 +1379,241 @@ describe("ExternalApiServer", () => {
 			expect(response.body.error).toBe("Failed to update auto-approve enabled setting")
 		})
 	})
+
+	describe("GET /api/mcps", () => {
+		beforeEach(() => {
+			mockClineApi.sidebarProvider.mcpHub = {
+				getServers: jest.fn<any[], any>().mockReturnValue([
+					{
+						name: "test-mcp",
+						status: "connected",
+						disabled: false,
+						error: null,
+					},
+				]),
+			} as any
+		})
+
+		it("should list MCPs successfully", async () => {
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/mcps",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual([
+				{
+					id: "test-mcp",
+					name: "test-mcp",
+					status: "connected",
+					description: undefined,
+				},
+			])
+			expect(mockClineApi.sidebarProvider.mcpHub?.getServers).toHaveBeenCalled()
+		})
+
+		it("should handle missing MCP Hub", async () => {
+			mockClineApi.sidebarProvider.mcpHub = undefined
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/mcps",
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("MCP Hub not available")
+		})
+
+		it("should handle errors", async () => {
+			const getServers = mockClineApi.sidebarProvider.mcpHub!.getServers as jest.Mock
+			getServers.mockImplementation(() => {
+				throw new Error("test error")
+			})
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/mcps",
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to get MCPs")
+		})
+	})
+
+	describe("GET /api/mcps/:id", () => {
+		beforeEach(() => {
+			mockClineApi.sidebarProvider.mcpHub = {
+				getServers: jest.fn<any[], any>().mockReturnValue([
+					{
+						name: "test-mcp",
+						status: "connected",
+						disabled: false,
+						error: null,
+						tools: [
+							{
+								name: "test-tool",
+								description: "A test tool",
+								inputSchema: { type: "object" },
+							},
+						],
+						config: JSON.stringify({ url: "http://localhost:1234" }),
+					},
+				]),
+			} as any
+		})
+
+		it("should get MCP details successfully", async () => {
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/mcps/test-mcp",
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({
+				id: "test-mcp",
+				name: "test-mcp",
+				status: "connected",
+				description: undefined,
+				tools: [
+					{
+						name: "test-tool",
+						description: "A test tool",
+						parameters: { type: "object" },
+					},
+				],
+				metadata: {
+					config: { url: "http://localhost:1234" },
+				},
+			})
+			expect(mockClineApi.sidebarProvider.mcpHub?.getServers).toHaveBeenCalled()
+		})
+
+		it("should handle missing MCP Hub", async () => {
+			mockClineApi.sidebarProvider.mcpHub = undefined
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/mcps/test-mcp",
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("MCP Hub not available")
+		})
+
+		it("should handle non-existent MCP", async () => {
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/mcps/non-existent",
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("MCP not found")
+		})
+
+		it("should handle errors", async () => {
+			const getServers = mockClineApi.sidebarProvider.mcpHub!.getServers as jest.Mock
+			getServers.mockImplementation(() => {
+				throw new Error("test error")
+			})
+
+			const response = await retryRequest({
+				port,
+				method: "GET",
+				path: "/api/mcps/test-mcp",
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to get MCP details")
+		})
+	})
+
+	describe("POST /api/mcps/:id/status", () => {
+		beforeEach(() => {
+			mockClineApi.sidebarProvider.mcpHub = {
+				getServers: jest.fn<any[], any>().mockReturnValue([
+					{
+						name: "test-mcp",
+						status: "connected",
+						disabled: false,
+					},
+				]),
+				toggleServerDisabled: jest.fn<Promise<void>, [string, boolean]>().mockResolvedValue(undefined),
+			} as any
+		})
+
+		it("should update MCP status successfully", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/mcps/test-mcp/status",
+				body: { enabled: true },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({
+				success: true,
+				status: "enabled",
+			})
+			expect(mockClineApi.sidebarProvider.mcpHub?.toggleServerDisabled).toHaveBeenCalledWith("test-mcp", false)
+		})
+
+		it("should handle missing MCP Hub", async () => {
+			mockClineApi.sidebarProvider.mcpHub = undefined
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/mcps/test-mcp/status",
+				body: { enabled: true },
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("MCP Hub not available")
+		})
+
+		it("should validate enabled parameter", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/mcps/test-mcp/status",
+				body: { enabled: "not-a-boolean" },
+			})
+
+			expect(response.status).toBe(400)
+			expect(response.body.error).toBe("enabled must be a boolean")
+		})
+
+		it("should handle non-existent MCP", async () => {
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/mcps/non-existent/status",
+				body: { enabled: true },
+			})
+
+			expect(response.status).toBe(404)
+			expect(response.body.error).toBe("MCP not found")
+		})
+
+		it("should handle errors", async () => {
+			const toggleServerDisabled = mockClineApi.sidebarProvider.mcpHub!.toggleServerDisabled as jest.Mock
+			toggleServerDisabled.mockRejectedValue(new Error("test error"))
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/mcps/test-mcp/status",
+				body: { enabled: true },
+			})
+
+			expect(response.status).toBe(500)
+			expect(response.body.error).toBe("Failed to update MCP status")
+		})
+	})
 })

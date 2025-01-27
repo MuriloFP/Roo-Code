@@ -44,6 +44,14 @@
 - Security guidelines documented
 - Example integrations provided
 
+✓ MCP Management
+
+- GET /api/mcps endpoint complete
+- GET /api/mcps/:id endpoint complete
+- POST /api/mcps/:id/status endpoint complete
+- Full test coverage implemented (81 passing tests)
+- Documentation updated
+
 ## Completed Features
 
 ### Core Infrastructure
@@ -69,10 +77,14 @@
     - GET /api/auto-approve: Get current settings
     - POST /api/auto-approve: Update all settings
     - POST /api/auto-approve/enabled: Toggle master switch
+- MCP Management (Complete):
+    - GET /api/mcps: List all MCPs with status
+    - GET /api/mcps/:id: Get detailed MCP information
+    - POST /api/mcps/:id/status: Enable/disable MCP
 
 ### Testing
 
-- Comprehensive test coverage (69 passing tests)
+- Comprehensive test coverage (81 passing tests)
 - Tests for all API endpoints including auto-approve and enhanced task creation
 - Error handling test cases
 - Mock implementations for ClineAPI and file system operations
@@ -125,6 +137,16 @@
 - [ ] Enhance error messages with more details
 - [ ] Clean up duplicate mock files
 
+### Message Sending Enhancement (High Priority)
+
+- [ ] Implement message sending to specific tasks:
+    - [ ] POST /api/messages/:id endpoint
+    - [ ] Task existence validation
+    - [ ] Message format validation
+    - [ ] Error handling for non-existent tasks
+- [ ] Add comprehensive tests for new endpoint
+- [ ] Update documentation
+
 ## Next Steps
 
 1. MCP Management Implementation:
@@ -147,6 +169,13 @@
 4. Add rate limiting and authentication
 5. Enhance error messages with more details
 6. Clean up duplicate mock files
+
+7. Message Sending Enhancement:
+    - Design and implement POST /api/messages/:id endpoint
+    - Add task existence validation
+    - Implement proper error handling
+    - Add comprehensive tests
+    - Update documentation
 
 ## Known Issues
 
