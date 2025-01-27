@@ -274,14 +274,18 @@ describe("ExternalApiServer", () => {
 				port,
 				method: "POST",
 				path: "/api/tasks",
-				body: { message, wait_for_completion: true },
+				body: { message, wait_for_response: true },
 			})
 
 			expect(response.status).toBe(200)
 			expect(response.body).toEqual({
 				id: "test-task",
-				status: "completed",
+				messages: [
+					{ ts: 1999, type: "user", text: message },
+					{ ts: 2000, type: "say", say: "task", text: "Task Completed" },
+				],
 				lastMessage: "Task Completed",
+				status: "completed",
 			})
 		}, 30000)
 
@@ -361,16 +365,16 @@ describe("ExternalApiServer", () => {
 			expect(response.body.error).toBe("Profile must be a string")
 		})
 
-		it("should validate wait_for_completion format", async () => {
+		it("should validate wait_for_response format", async () => {
 			const response = await retryRequest({
 				port,
 				method: "POST",
 				path: "/api/tasks",
-				body: { message: "test", wait_for_completion: "not-a-boolean" },
+				body: { message: "test", wait_for_response: "not-a-boolean" },
 			})
 
 			expect(response.status).toBe(400)
-			expect(response.body.error).toBe("wait_for_completion must be a boolean")
+			expect(response.body.error).toBe("wait_for_response must be a boolean")
 		})
 
 		it("should handle non-existent mode", async () => {
@@ -439,20 +443,44 @@ describe("ExternalApiServer", () => {
 	})
 
 	describe("POST /api/messages", () => {
-		it("should send message successfully", async () => {
-			const message = "test message"
-			const images = ["image1.png"]
+		beforeEach(() => {
+			mockClineApi.sidebarProvider.getGlobalState = jest.fn().mockResolvedValue([{ id: "test-task", ts: 1000 }])
+		})
+
+		it("should send message and wait for response", async () => {
+			const message = "test task"
+
+			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockResolvedValue({
+				historyItem: { id: "test-task" },
+				uiMessagesFilePath: "/test/path/messages.json",
+			})
+			;(fs.readFile as jest.Mock)
+				.mockResolvedValueOnce(JSON.stringify([{ ts: 1999, type: "user", text: "test task" }]))
+				.mockResolvedValueOnce(
+					JSON.stringify([
+						{ ts: 1999, type: "user", text: "test task" },
+						{ ts: 2000, type: "say", say: "task", text: "Task Completed" },
+					]),
+				)
 
 			const response = await retryRequest({
 				port,
 				method: "POST",
 				path: "/api/messages",
-				body: { message, images },
+				body: { message, wait_for_response: true },
 			})
 
 			expect(response.status).toBe(200)
-			expect(response.body).toEqual({ success: true })
-			expect(mockClineApi.sendMessage).toHaveBeenCalledWith(message, images)
+			expect(response.body).toEqual({
+				id: "test-task",
+				messages: [
+					{ ts: 1999, type: "user", text: "test task" },
+					{ ts: 2000, type: "say", say: "task", text: "Task Completed" },
+				],
+				lastMessage: "Task Completed",
+				status: "completed",
+			})
+			expect(mockClineApi.sendMessage).toHaveBeenCalledWith(message, undefined)
 		})
 
 		it("should validate message format", async () => {
@@ -495,29 +523,40 @@ describe("ExternalApiServer", () => {
 	})
 
 	describe("POST /api/messages/:id", () => {
-		beforeEach(() => {
+		it("should send message to specific task and wait for response", async () => {
+			const message = "test task"
+
 			mockClineApi.sidebarProvider.getTaskWithId = jest.fn().mockResolvedValue({
 				historyItem: { id: "test-task-id" },
 				uiMessagesFilePath: "/test/path/messages.json",
 			})
-			mockClineApi.sendMessage = jest.fn().mockResolvedValue(undefined)
-		})
-
-		it("should send message to specific task successfully", async () => {
-			const message = "test message"
-			const images = ["image1.png"]
+			;(fs.readFile as jest.Mock)
+				.mockResolvedValueOnce(JSON.stringify([{ ts: 1999, type: "user", text: "test task" }]))
+				.mockResolvedValueOnce(
+					JSON.stringify([
+						{ ts: 1999, type: "user", text: "test task" },
+						{ ts: 2000, type: "say", say: "task", text: "Task Completed" },
+					]),
+				)
 
 			const response = await retryRequest({
 				port,
 				method: "POST",
 				path: "/api/messages/test-task-id",
-				body: { message, images },
+				body: { message, wait_for_response: true },
 			})
 
 			expect(response.status).toBe(200)
-			expect(response.body).toEqual({ success: true })
-			expect(mockClineApi.sidebarProvider.getTaskWithId).toHaveBeenCalledWith("test-task-id")
-			expect(mockClineApi.sendMessage).toHaveBeenCalledWith(message, images)
+			expect(response.body).toEqual({
+				id: "test-task-id",
+				messages: [
+					{ ts: 1999, type: "user", text: "test task" },
+					{ ts: 2000, type: "say", say: "task", text: "Task Completed" },
+				],
+				lastMessage: "Task Completed",
+				status: "completed",
+			})
+			expect(mockClineApi.sendMessage).toHaveBeenCalledWith(message, undefined)
 		})
 
 		it("should return 404 when task is not found", async () => {
@@ -1717,6 +1756,7 @@ describe("ExternalApiServer", () => {
 			jest.spyOn(fs, "readFile").mockResolvedValue(
 				JSON.stringify([
 					{
+						ts: 1999,
 						type: "ask",
 						ask: "command",
 						text: "Do you want to run this command?",
@@ -1725,7 +1765,7 @@ describe("ExternalApiServer", () => {
 			)
 		})
 
-		it("should approve current task action successfully", async () => {
+		it("should approve current task action without waiting", async () => {
 			const response = await retryRequest({
 				port,
 				method: "POST",
@@ -1738,7 +1778,7 @@ describe("ExternalApiServer", () => {
 			expect(mockClineApi.pressPrimaryButton).toHaveBeenCalled()
 		})
 
-		it("should reject current task action successfully", async () => {
+		it("should reject current task action without waiting", async () => {
 			const response = await retryRequest({
 				port,
 				method: "POST",
@@ -1749,6 +1789,60 @@ describe("ExternalApiServer", () => {
 			expect(response.status).toBe(200)
 			expect(response.body).toEqual({ success: true })
 			expect(mockClineApi.pressSecondaryButton).toHaveBeenCalled()
+		})
+
+		it("should approve current task action and wait for response", async () => {
+			// Mock messages after approval
+			jest.spyOn(fs, "readFile")
+				.mockResolvedValueOnce(
+					JSON.stringify([
+						{
+							ts: 1999,
+							type: "ask",
+							ask: "command",
+							text: "Do you want to run this command?",
+						},
+					]),
+				)
+				.mockResolvedValueOnce(
+					JSON.stringify([
+						{
+							ts: 1999,
+							type: "ask",
+							ask: "command",
+							text: "Do you want to run this command?",
+						},
+						{
+							ts: 2000,
+							type: "say",
+							say: "task",
+							text: "Task Completed",
+						},
+					]),
+				)
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks/respond",
+				body: { response: "approve", wait_for_response: true },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({
+				id: "test-task-2",
+				messages: [
+					{
+						ts: 2000,
+						type: "say",
+						say: "task",
+						text: "Task Completed",
+					},
+				],
+				lastMessage: "Task Completed",
+				status: "completed",
+			})
+			expect(mockClineApi.pressPrimaryButton).toHaveBeenCalled()
 		})
 
 		it("should return 400 for invalid response value", async () => {
@@ -1809,6 +1903,7 @@ describe("ExternalApiServer", () => {
 			jest.spyOn(fs, "readFile").mockResolvedValue(
 				JSON.stringify([
 					{
+						ts: 1999,
 						type: "ask",
 						ask: "command",
 						text: "Do you want to run this command?",
@@ -1817,7 +1912,7 @@ describe("ExternalApiServer", () => {
 			)
 		})
 
-		it("should approve task action successfully", async () => {
+		it("should approve task action without waiting", async () => {
 			const response = await retryRequest({
 				port,
 				method: "POST",
@@ -1830,7 +1925,7 @@ describe("ExternalApiServer", () => {
 			expect(mockClineApi.pressPrimaryButton).toHaveBeenCalled()
 		})
 
-		it("should reject task action successfully", async () => {
+		it("should reject task action without waiting", async () => {
 			const response = await retryRequest({
 				port,
 				method: "POST",
@@ -1841,6 +1936,60 @@ describe("ExternalApiServer", () => {
 			expect(response.status).toBe(200)
 			expect(response.body).toEqual({ success: true })
 			expect(mockClineApi.pressSecondaryButton).toHaveBeenCalled()
+		})
+
+		it("should approve task action and wait for response", async () => {
+			// Mock messages after approval
+			jest.spyOn(fs, "readFile")
+				.mockResolvedValueOnce(
+					JSON.stringify([
+						{
+							ts: 1999,
+							type: "ask",
+							ask: "command",
+							text: "Do you want to run this command?",
+						},
+					]),
+				)
+				.mockResolvedValueOnce(
+					JSON.stringify([
+						{
+							ts: 1999,
+							type: "ask",
+							ask: "command",
+							text: "Do you want to run this command?",
+						},
+						{
+							ts: 2000,
+							type: "say",
+							say: "task",
+							text: "Task Completed",
+						},
+					]),
+				)
+
+			const response = await retryRequest({
+				port,
+				method: "POST",
+				path: "/api/tasks/test-id/respond",
+				body: { response: "approve", wait_for_response: true },
+			})
+
+			expect(response.status).toBe(200)
+			expect(response.body).toEqual({
+				id: "test-id",
+				messages: [
+					{
+						ts: 2000,
+						type: "say",
+						say: "task",
+						text: "Task Completed",
+					},
+				],
+				lastMessage: "Task Completed",
+				status: "completed",
+			})
+			expect(mockClineApi.pressPrimaryButton).toHaveBeenCalled()
 		})
 
 		it("should return 400 for invalid response value", async () => {

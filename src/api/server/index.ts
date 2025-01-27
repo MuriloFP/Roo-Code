@@ -14,7 +14,7 @@ import { ClineMessage } from "../../shared/ExtensionMessage"
 export interface ExternalApiServerConfig {
 	/** Port number the server will listen on */
 	port: number
-	/** List of allowed origins for CORS. If empty, all origins are allowed */
+	/** List of allowed origins for CORS. If not specified, only localhost origins are allowed */
 	allowedHosts?: string[]
 }
 
@@ -50,13 +50,36 @@ export class ExternalApiServer {
 		// Security middleware
 		this.app.use((req: Request, res: Response, next: NextFunction) => {
 			const origin = req.get("origin")
-			if (this.config.allowedHosts && origin) {
-				if (!this.config.allowedHosts.includes(origin)) {
-					return res.status(403).json({ error: "Origin not allowed" })
-				}
+
+			// If no origin is set, only allow same-origin requests
+			if (!origin) {
+				next()
+				return
 			}
+
+			// Default to only allowing localhost if no hosts specified
+			const defaultAllowedHosts = [
+				"http://localhost",
+				"https://localhost",
+				"http://127.0.0.1",
+				"https://127.0.0.1",
+			]
+
+			const allowedHosts = this.config.allowedHosts || defaultAllowedHosts
+
+			// Check if origin matches any allowed host (including port variations)
+			const isAllowed = allowedHosts.some((host) => {
+				// Allow any port on allowed hosts
+				const hostWithoutPort = origin.split(":").slice(0, 2).join(":")
+				return hostWithoutPort.startsWith(host)
+			})
+
+			if (!isAllowed) {
+				return res.status(403).json({ error: "Origin not allowed" })
+			}
+
 			// Set CORS headers
-			res.setHeader("Access-Control-Allow-Origin", origin || "*")
+			res.setHeader("Access-Control-Allow-Origin", origin)
 			res.setHeader("Access-Control-Allow-Methods", "GET, POST")
 			res.setHeader("Access-Control-Allow-Headers", "Content-Type")
 			next()
@@ -92,6 +115,86 @@ export class ExternalApiServer {
 	 * - POST /api/tasks/:id/respond: Respond to a task action (approve/reject)
 	 */
 	private setupRoutes(): void {
+		/**
+		 * Polls for task response and returns all messages after a given timestamp
+		 * @param taskId The ID of the task to poll
+		 * @param afterTimestamp Optional timestamp to filter messages after (inclusive)
+		 * @returns Object containing task status, messages, and formatted last message
+		 */
+		const pollForTaskResponse = async (taskId: string, afterTimestamp?: number) => {
+			let attempts = 0
+			const maxAttempts = 120
+			let lastStatus = "waiting_for_response"
+			let messages: ClineMessage[] = []
+
+			while (attempts < maxAttempts) {
+				try {
+					const taskData = await this.clineApi.sidebarProvider.getTaskWithId(taskId)
+					let uiMessages: ClineMessage[] = []
+
+					try {
+						uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
+					} catch (error) {
+						// File might not exist yet, continue polling
+						if (!(error instanceof Error && error.message.includes("ENOENT"))) {
+							throw error
+						}
+					}
+
+					// Only update status if we have messages
+					if (uiMessages && uiMessages.length > 0) {
+						lastStatus = determineTaskStatus(uiMessages)
+
+						// Filter messages after the timestamp if provided
+						messages = afterTimestamp ? uiMessages.filter((msg) => msg.ts >= afterTimestamp) : uiMessages
+
+						// Return if we reach a terminal state or need user interaction
+						if (
+							lastStatus === "completed" ||
+							lastStatus === "error" ||
+							lastStatus === "needs_input" ||
+							lastStatus === "needs_approval"
+						) {
+							const lastMessage = uiMessages[uiMessages.length - 1]
+							const formattedLastMessage =
+								lastMessage?.type === "ask"
+									? `ask ${lastMessage.ask}: ${lastMessage.text}`
+									: lastMessage?.text || null
+
+							// If task is completed, ensure we have at least one message in the response
+							if (lastStatus === "completed" && messages.length === 0 && uiMessages.length > 0) {
+								messages = [uiMessages[uiMessages.length - 1]]
+							}
+
+							return {
+								id: taskId,
+								messages,
+								lastMessage: formattedLastMessage,
+								status: lastStatus,
+							}
+						}
+					}
+				} catch (error) {
+					// Only throw if it's not a file not found error
+					if (!(error instanceof Error && error.message === "Task not found")) {
+						throw error
+					}
+				}
+
+				// Wait 1 second before next attempt
+				await new Promise((resolve) => setTimeout(resolve, 1000))
+				attempts++
+			}
+
+			// If we reach here, we timed out waiting for response
+			return {
+				id: taskId,
+				messages,
+				lastMessage: messages[messages.length - 1]?.text || "Timeout waiting for response",
+				status: lastStatus,
+			}
+		}
+
 		// Get custom instructions
 		this.app.get("/api/instructions", async (req: Request, res: Response) => {
 			try {
@@ -304,7 +407,7 @@ export class ExternalApiServer {
 		// Start new task
 		this.app.post("/api/tasks", async (req: Request, res: Response) => {
 			try {
-				const { message, images, mode, profile, wait_for_completion = false } = req.body
+				const { message, images, mode, profile, wait_for_response = false } = req.body
 
 				// Validate input parameters
 				if (message !== undefined && typeof message !== "string") {
@@ -319,8 +422,8 @@ export class ExternalApiServer {
 				if (profile !== undefined && typeof profile !== "string") {
 					return res.status(400).json({ error: "Profile must be a string" })
 				}
-				if (typeof wait_for_completion !== "boolean") {
-					return res.status(400).json({ error: "wait_for_completion must be a boolean" })
+				if (typeof wait_for_response !== "boolean") {
+					return res.status(400).json({ error: "wait_for_response must be a boolean" })
 				}
 
 				// Switch mode if specified
@@ -384,74 +487,13 @@ export class ExternalApiServer {
 					throw new Error("Timeout waiting for task creation")
 				}
 
-				// If wait_for_completion is true, wait for task to complete or need input
-				if (wait_for_completion) {
-					// Poll for task completion (max 120 seconds)
-					attempts = 0
-					const maxCompletionAttempts = 120
-					let lastStatus = "waiting_for_response"
-					let lastMessageText = null
-
-					while (attempts < maxCompletionAttempts) {
-						try {
-							const taskData = await this.clineApi.sidebarProvider.getTaskWithId(newTaskId)
-							let uiMessages: ClineMessage[] = []
-
-							try {
-								uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
-							} catch (error) {
-								// File might not exist yet, continue polling
-								if (!(error instanceof Error && error.message.includes("ENOENT"))) {
-									throw error
-								}
-							}
-
-							// Only update status if we have messages
-							if (uiMessages && uiMessages.length > 0) {
-								lastStatus = determineTaskStatus(uiMessages)
-								lastMessageText = uiMessages[uiMessages.length - 1]?.text || null
-
-								// Return if we reach a terminal state or need user interaction
-								if (
-									lastStatus === "completed" ||
-									lastStatus === "error" ||
-									lastStatus === "needs_input" ||
-									lastStatus === "needs_approval"
-								) {
-									const lastMessage = uiMessages[uiMessages.length - 1]
-									const formattedLastMessage =
-										lastMessage?.type === "ask"
-											? `ask ${lastMessage.ask}: ${lastMessage.text}`
-											: lastMessage?.text || null
-
-									return res.json({
-										id: newTaskId,
-										status: lastStatus,
-										lastMessage: formattedLastMessage,
-									})
-								}
-							}
-						} catch (error) {
-							// Only throw if it's not a file not found error
-							if (!(error instanceof Error && error.message === "Task not found")) {
-								throw error
-							}
-						}
-
-						// Wait 1 second before next attempt
-						await new Promise((resolve) => setTimeout(resolve, 1000))
-						attempts++
-					}
-
-					// If we reach here, we timed out waiting for completion
-					return res.json({
-						id: newTaskId,
-						status: lastStatus,
-						lastMessage: lastMessageText || "Timeout waiting for response",
-					})
+				// If wait_for_response is true, wait for task to complete or need input
+				if (wait_for_response) {
+					const result = await pollForTaskResponse(newTaskId)
+					return res.json(result)
 				}
 
-				// Return success response with task ID if not waiting for completion
+				// Return success response with task ID if not waiting for response
 				return res.json({ success: true, id: newTaskId })
 			} catch (error) {
 				console.error("Error starting task:", error)
@@ -462,14 +504,34 @@ export class ExternalApiServer {
 		// Send message
 		this.app.post("/api/messages", async (req: Request, res: Response) => {
 			try {
-				const { message, images } = req.body
+				const { message, images, wait_for_response = false } = req.body
 				if (message !== undefined && typeof message !== "string") {
 					return res.status(400).json({ error: "Invalid message format" })
 				}
 				if (images !== undefined && !Array.isArray(images)) {
 					return res.status(400).json({ error: "Invalid images format" })
 				}
+				if (typeof wait_for_response !== "boolean") {
+					return res.status(400).json({ error: "wait_for_response must be a boolean" })
+				}
+
+				// Get current task ID before sending message
+				const taskHistory =
+					((await this.clineApi.sidebarProvider.getGlobalState("taskHistory")) as
+						| HistoryItem[]
+						| undefined) || []
+				if (taskHistory.length === 0) {
+					return res.status(404).json({ error: "No active task found" })
+				}
+				const currentTaskId = taskHistory[taskHistory.length - 1].id
+
 				await this.clineApi.sendMessage(message, images)
+
+				if (wait_for_response) {
+					const result = await pollForTaskResponse(currentTaskId)
+					return res.json(result)
+				}
+
 				return res.json({ success: true })
 			} catch (error) {
 				console.error("Error sending message:", error)
@@ -481,7 +543,7 @@ export class ExternalApiServer {
 		this.app.post("/api/messages/:id", async (req: Request, res: Response) => {
 			try {
 				const { id } = req.params
-				const { message, images } = req.body
+				const { message, images, wait_for_response = false } = req.body
 
 				// Validate message format
 				if (message !== undefined && typeof message !== "string") {
@@ -490,16 +552,26 @@ export class ExternalApiServer {
 				if (images !== undefined && !Array.isArray(images)) {
 					return res.status(400).json({ error: "Invalid images format" })
 				}
-
-				// Verify task exists
-				try {
-					await this.clineApi.sidebarProvider.getTaskWithId(id)
-				} catch (error) {
-					return res.status(404).json({ error: "Task not found" })
+				if (typeof wait_for_response !== "boolean") {
+					return res.status(400).json({ error: "wait_for_response must be a boolean" })
 				}
 
-				// Send message
-				await this.clineApi.sendMessage(message, images)
+				// Verify task exists and send message
+				try {
+					await this.clineApi.sidebarProvider.getTaskWithId(id)
+					await this.clineApi.sendMessage(message, images)
+				} catch (error) {
+					if (error instanceof Error && error.message === "Task not found") {
+						return res.status(404).json({ error: "Task not found" })
+					}
+					throw error // Re-throw to be caught by outer catch block
+				}
+
+				if (wait_for_response) {
+					const result = await pollForTaskResponse(id)
+					return res.json(result)
+				}
+
 				return res.json({ success: true })
 			} catch (error) {
 				console.error("Error sending message:", error)
@@ -529,8 +601,8 @@ export class ExternalApiServer {
 
 				return res.json({
 					id: currentTaskId,
-					status,
 					lastMessage: formattedLastMessage,
+					status,
 				})
 			} catch (error) {
 				console.error("Error getting task status:", error)
@@ -551,8 +623,8 @@ export class ExternalApiServer {
 
 				return res.json({
 					id: req.params.id,
-					status,
 					lastMessage: formattedLastMessage,
+					status,
 				})
 			} catch (error) {
 				if (error instanceof Error && error.message === "Task not found") {
@@ -833,11 +905,14 @@ export class ExternalApiServer {
 		// Respond to task action (approve/reject)
 		this.app.post("/api/tasks/respond", async (req: Request, res: Response) => {
 			try {
-				const { response } = req.body
+				const { response, wait_for_response = false } = req.body
 
 				// Validate response
 				if (response !== "approve" && response !== "reject") {
 					return res.status(400).json({ error: "response must be either 'approve' or 'reject'" })
+				}
+				if (typeof wait_for_response !== "boolean") {
+					return res.status(400).json({ error: "wait_for_response must be a boolean" })
 				}
 
 				// Get current task ID
@@ -859,11 +934,19 @@ export class ExternalApiServer {
 					return res.status(400).json({ error: "Task is not in a state that needs approval" })
 				}
 
+				// Get current timestamp before sending response
+				const responseTimestamp = Date.now()
+
 				// Send appropriate response
 				if (response === "approve") {
 					await this.clineApi.pressPrimaryButton()
 				} else {
 					await this.clineApi.pressSecondaryButton()
+				}
+
+				if (wait_for_response) {
+					const result = await pollForTaskResponse(currentTaskId, responseTimestamp)
+					return res.json(result)
 				}
 
 				return res.json({ success: true })
@@ -876,15 +959,18 @@ export class ExternalApiServer {
 			}
 		})
 
-		// Respond to task action (approve/reject)
+		// Respond to specific task action (approve/reject)
 		this.app.post("/api/tasks/:id/respond", async (req: Request, res: Response) => {
 			try {
 				const { id } = req.params
-				const { response } = req.body
+				const { response, wait_for_response = false } = req.body
 
 				// Validate response
 				if (response !== "approve" && response !== "reject") {
 					return res.status(400).json({ error: "response must be either 'approve' or 'reject'" })
+				}
+				if (typeof wait_for_response !== "boolean") {
+					return res.status(400).json({ error: "wait_for_response must be a boolean" })
 				}
 
 				// Get task status to verify it needs approval
@@ -896,11 +982,19 @@ export class ExternalApiServer {
 					return res.status(400).json({ error: "Task is not in a state that needs approval" })
 				}
 
+				// Get current timestamp before sending response
+				const responseTimestamp = Date.now()
+
 				// Send appropriate response
 				if (response === "approve") {
 					await this.clineApi.pressPrimaryButton()
 				} else {
 					await this.clineApi.pressSecondaryButton()
+				}
+
+				if (wait_for_response) {
+					const result = await pollForTaskResponse(id, responseTimestamp)
+					return res.json(result)
 				}
 
 				return res.json({ success: true })

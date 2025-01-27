@@ -68,7 +68,7 @@
 - Mode management (GET all, GET current, POST switch)
 - Profile management (GET all, GET current, POST switch)
 - Task Management (Complete):
-    - POST /api/tasks: Create new tasks with enhanced parameters (mode, profile, wait_for_completion)
+    - POST /api/tasks: Create new tasks with enhanced parameters (mode, profile, wait_for_response)
     - GET /api/tasks: List tasks with pagination
     - GET /api/tasks/status & GET /api/tasks/:id/status: Task status retrieval
     - GET /api/tasks/logs & GET /api/tasks/:id/logs: Conversation history

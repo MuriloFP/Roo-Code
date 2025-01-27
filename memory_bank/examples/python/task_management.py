@@ -33,11 +33,14 @@ def get_task_logs_by_id(task_id):
     response = requests.get(url)
     return response.json()
 
-def send_message_to_task(task_id, message, images=None):
+def send_message_to_task(task_id, message, images=None, wait_for_response=False):
     """Send a message to a specific task."""
     url = f"{API_BASE_URL}/messages/{task_id}"
     
-    payload = {"message": message}
+    payload = {
+        "message": message,
+        "wait_for_response": wait_for_response
+    }
     if images:
         payload["images"] = images
 
@@ -71,12 +74,13 @@ def main():
         input(f"\nPress Enter to send message to task {task_id}...")  # Wait for user input
 
         # Send message to specific task
-        print(f"\nSending message to task {task_id}...")
+        print(f"\nSending message to task {task_id} and waiting for response...")
         result = send_message_to_task(
             task_id,
-            "This is a message to a specific task!"
+            "This is a message to a specific task!",
+            wait_for_response=True  # Wait for response
         )
-        print(f"Message sent: {json.dumps(result, indent=2)}")
+        print(f"Response received: {json.dumps(result, indent=2)}")
 
 if __name__ == "__main__":
     main() 

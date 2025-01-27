@@ -1,7 +1,7 @@
 """
 Task Creation Test Script
 
-This script tests the task creation endpoint with wait_for_completion=True
+This script tests the task creation endpoint with wait_for_response=True
 to verify that it properly waits for the initial response.
 """
 
@@ -18,7 +18,7 @@ def create_task(message):
     
     payload = {
         "message": message,
-        "wait_for_completion": True  # This should make it wait for the response
+        "wait_for_response": True  # This should make it wait for the response
     }
 
     print("Sending request...")
@@ -51,7 +51,7 @@ def format_status(status):
     return f"{status_colors.get(status, '')}{status}{reset_color}"
 
 def main():
-    print("Testing task creation with wait_for_completion=True\n")
+    print("Testing task creation with wait_for_response=True\n")
     
     message = "Hello! Please create a python script that prints 'Hello World!'"
     

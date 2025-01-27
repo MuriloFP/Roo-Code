@@ -13,7 +13,7 @@ import json
 # Configuration
 API_BASE_URL = "http://localhost:3002/api"  # Adjust port as needed
 
-def create_task(message=None, mode=None, profile=None):
+def create_task(message=None, mode=None, profile=None, wait_for_response=False):
     """Create a new task with optional parameters."""
     url = f"{API_BASE_URL}/tasks"
     
@@ -24,6 +24,8 @@ def create_task(message=None, mode=None, profile=None):
         payload["mode"] = mode
     if profile:
         payload["profile"] = profile
+    if wait_for_response:
+        payload["wait_for_response"] = wait_for_response
 
     response = requests.post(url, json=payload)
     return response.json()
@@ -37,14 +39,19 @@ def get_task_status(task_id=None):
     response = requests.get(url)
     return response.json()
 
-def approve_task(task_id=None):
+def approve_task(task_id=None, wait_for_response=False):
     """Approve a task using either task ID or current task endpoint."""
     if task_id:
         url = f"{API_BASE_URL}/tasks/{task_id}/respond"
     else:
         url = f"{API_BASE_URL}/tasks/respond"
     
-    response = requests.post(url, json={"response": "approve"})
+    payload = {
+        "response": "approve",
+        "wait_for_response": wait_for_response
+    }
+    
+    response = requests.post(url, json=payload)
     return response.json()
 
 def main():
@@ -54,7 +61,8 @@ def main():
     
     result = create_task(
         message="Create a python script that prints hello world and run it",
-        mode="architect"  # Optional: specify a mode
+        mode="architect",  # Optional: specify a mode
+        wait_for_response=True  # Wait for initial response
     )
     task_id = result.get("id")
     print(f"Task created: {json.dumps(result, indent=2)}")
@@ -67,8 +75,10 @@ def main():
         
         if status.get("status") == "needs_approval":
             input("\nPress Enter to approve the task...")
-            result = approve_task(task_id)
+            result = approve_task(task_id, wait_for_response=True)  # Wait for response after approval
             print(f"Approval result: {json.dumps(result, indent=2)}")
+            if result.get("status") in ["completed", "error"]:
+                break
         elif status.get("status") in ["completed", "error"]:
             break
     
@@ -78,7 +88,8 @@ def main():
     
     result = create_task(
         message="Create a python script that prints hello world and run it",
-        mode="architect"  # Optional: specify a mode
+        mode="architect",  # Optional: specify a mode
+        wait_for_response=True  # Wait for initial response
     )
     print(f"Task created: {json.dumps(result, indent=2)}")
     
@@ -90,8 +101,10 @@ def main():
         
         if status.get("status") == "needs_approval":
             input("\nPress Enter to approve the current task...")
-            result = approve_task()
+            result = approve_task(wait_for_response=True)  # Wait for response after approval
             print(f"Approval result: {json.dumps(result, indent=2)}")
+            if result.get("status") in ["completed", "error"]:
+                break
         elif status.get("status") in ["completed", "error"]:
             break
 

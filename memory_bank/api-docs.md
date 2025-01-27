@@ -87,7 +87,7 @@ Start a new task.
     "profile": "string" (optional),
     "timeout": number (optional, default: 300000),
     "auto_approve": boolean (optional, default: false),
-    "wait_for_completion": boolean (optional, default: false)
+    "wait_for_response": boolean (optional, default: false)
 }
 ```
 

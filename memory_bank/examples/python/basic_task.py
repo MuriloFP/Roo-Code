@@ -14,7 +14,7 @@ import json
 # Configuration
 API_BASE_URL = "http://localhost:3002/api"  # Adjust port as needed
 
-def create_task(message=None, mode=None, profile=None, wait_for_completion=False):
+def create_task(message=None, mode=None, profile=None, wait_for_response=False):
     """Create a new task with optional parameters."""
     url = f"{API_BASE_URL}/tasks"
     
@@ -25,8 +25,8 @@ def create_task(message=None, mode=None, profile=None, wait_for_completion=False
         payload["mode"] = mode
     if profile:
         payload["profile"] = profile
-    if wait_for_completion:
-        payload["wait_for_completion"] = wait_for_completion
+    if wait_for_response:
+        payload["wait_for_response"] = wait_for_response
 
     response = requests.post(url, json=payload)
     return response.json()
@@ -60,7 +60,7 @@ def main():
     result = create_task(
         message="Hello! Let's start a new task.",
         mode="architect",  # Optional: specify a mode
-        wait_for_completion=True  # Wait for initial response
+        wait_for_response=True  # Wait for initial response
     )
     print(f"Task created: {json.dumps(result, indent=2)}")
 

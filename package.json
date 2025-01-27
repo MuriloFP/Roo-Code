@@ -217,7 +217,7 @@
 						"type": "string"
 					},
 					"default": [],
-					"description": "List of allowed host origins for CORS (empty list means all hosts are allowed)"
+					"description": "List of allowed host origins for CORS (empty list means only localhost origins are allowed)"
 				}
 			}
 		}

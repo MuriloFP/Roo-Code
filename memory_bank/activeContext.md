@@ -14,7 +14,7 @@
     - Extended POST /api/tasks endpoint with new parameters:
         - mode: Switch to specific mode before task
         - profile: Switch to specific profile before task
-        - wait_for_completion: Wait for task completion
+        - wait_for_response: Wait for task completion
     - Added full test coverage for new parameters
     - Updated API documentation
 
