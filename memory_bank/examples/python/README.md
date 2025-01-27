@@ -10,7 +10,7 @@ This directory contains Python examples demonstrating how to use the RooCode Ext
 
 ## Configuration
 
-All examples use `http://localhost:3000` as the default API base URL. If your RooCode instance is running on a different port, update the `API_BASE_URL` variable in each script.
+All examples use `http://localhost:3002` as the default API base URL. If your RooCode instance is running on a different port, update the `API_BASE_URL` variable in each script.
 
 ## Examples
 

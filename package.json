@@ -217,7 +217,7 @@
 						"type": "string"
 					},
 					"default": [],
-					"description": "List of allowed host origins for CORS (empty list means only localhost origins are allowed)"
+					"description": "List of allowed host origins for CORS. Format should be full origin URLs like 'http://localhost:3000' or 'https://myapp.com'. Empty list defaults to localhost only, otherwise exactly the specified hosts are allowed."
 				}
 			}
 		}
