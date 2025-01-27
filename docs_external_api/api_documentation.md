@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/5d1fdc6f-7a4a-4a22-ab39-e80dfa10b512)# RooCode External API Documentation
+# RooCode External API Documentation
 
 ## Overview
 
