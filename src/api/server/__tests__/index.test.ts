@@ -139,15 +139,40 @@ describe("ExternalApiServer", () => {
 	})
 
 	describe("CORS middleware", () => {
-		it("should allow requests from allowed origins", async () => {
+		it("should allow requests from allowed origins with exact match", async () => {
+			const testPort = getRandomPort()
+			const allowedOrigin = `http://localhost:${testPort}`
+			const localServer = new ExternalApiServer(
+				{ port: testPort, allowedHosts: ["http://localhost"] },
+				mockClineApi,
+			)
+			await localServer.start()
+
 			const response = await retryRequest({
-				port,
+				port: testPort,
 				method: "GET",
 				path: "/api/instructions",
-				headers: { Origin: "http://localhost:3000" },
+				headers: { Origin: allowedOrigin },
 			})
 
 			expect(response.status).not.toBe(403)
+			await localServer.stop()
+		})
+
+		it("should allow requests from localhost when no hosts specified", async () => {
+			const testPort = getRandomPort()
+			const localServer = new ExternalApiServer({ port: testPort }, mockClineApi)
+			await localServer.start()
+
+			const response = await retryRequest({
+				port: testPort,
+				method: "GET",
+				path: "/api/instructions",
+				headers: { Origin: "http://localhost" },
+			})
+
+			expect(response.status).not.toBe(403)
+			await localServer.stop()
 		})
 
 		it("should block requests from disallowed origins", async () => {
