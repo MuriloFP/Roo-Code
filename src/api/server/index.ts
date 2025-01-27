@@ -247,7 +247,7 @@ export class ExternalApiServer {
 		// Helper function to determine task status from messages
 		function determineTaskStatus(messages: ClineMessage[]): string {
 			if (!messages || messages.length === 0) {
-				return "error"
+				return "waiting_for_response"
 			}
 
 			const lastMessage = messages[messages.length - 1]
@@ -276,8 +276,13 @@ export class ExternalApiServer {
 				return "needs_input"
 			}
 
-			// Default to in_progress
-			return "in_progress"
+			// Check for API request in progress
+			if (lastMessage.type === "say" && lastMessage.say === "api_req_started") {
+				return "in_progress"
+			}
+
+			// Default to waiting for response if we have messages but no clear state
+			return "waiting_for_response"
 		}
 
 		// Start new task
@@ -340,18 +345,47 @@ export class ExternalApiServer {
 					// Poll for task completion (max 120 seconds)
 					let attempts = 0
 					const maxAttempts = 120
-					while (attempts < maxAttempts) {
-						const taskData = await this.clineApi.sidebarProvider.getTaskWithId(currentTaskId)
-						const uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
-						const status = determineTaskStatus(uiMessages)
+					let lastStatus = "waiting_for_response"
+					let lastMessageText = null
 
-						// Return if we reach a terminal state or need user interaction
-						if (status !== "in_progress") {
-							return res.json({
-								id: currentTaskId,
-								status,
-								lastMessage: uiMessages[uiMessages.length - 1]?.text || null,
-							})
+					while (attempts < maxAttempts) {
+						try {
+							const taskData = await this.clineApi.sidebarProvider.getTaskWithId(currentTaskId)
+							let uiMessages: ClineMessage[] = []
+
+							try {
+								uiMessages = JSON.parse(await fs.readFile(taskData.uiMessagesFilePath, "utf8"))
+							} catch (error) {
+								// File might not exist yet, continue polling
+								if (!(error instanceof Error && error.message.includes("ENOENT"))) {
+									throw error
+								}
+							}
+
+							// Only update status if we have messages
+							if (uiMessages && uiMessages.length > 0) {
+								lastStatus = determineTaskStatus(uiMessages)
+								lastMessageText = uiMessages[uiMessages.length - 1]?.text || null
+
+								// Return if we reach a terminal state or need user interaction
+								if (
+									lastStatus === "completed" ||
+									lastStatus === "error" ||
+									lastStatus === "needs_input" ||
+									lastStatus === "needs_approval"
+								) {
+									return res.json({
+										id: currentTaskId,
+										status: lastStatus,
+										lastMessage: lastMessageText,
+									})
+								}
+							}
+						} catch (error) {
+							// Only throw if it's not a file not found error
+							if (!(error instanceof Error && error.message === "Task not found")) {
+								throw error
+							}
 						}
 
 						// Wait 1 second before next attempt
@@ -362,8 +396,8 @@ export class ExternalApiServer {
 					// If we reach here, we timed out waiting for completion
 					return res.json({
 						id: currentTaskId,
-						status: "in_progress",
-						lastMessage: "Timeout waiting for initial response",
+						status: lastStatus,
+						lastMessage: lastMessageText || "Timeout waiting for response",
 					})
 				}
 
