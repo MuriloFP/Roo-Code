@@ -1,9 +1,14 @@
 const esbuild = require("esbuild")
 const fs = require("fs")
 const path = require("path")
+const os = require("os")
 
 const production = process.argv.includes("--production")
 const watch = process.argv.includes("--watch")
+
+// Determine platform-specific LanceDB module
+const isWindows = os.platform() === "win32"
+const lancedbPlatformModule = isWindows ? "@lancedb/lancedb-win32-x64-msvc/*" : "@lancedb/lancedb-linux-x64-gnu"
 
 /**
  * @type {import('esbuild').Plugin}
@@ -85,7 +90,7 @@ const extensionConfig = {
 	sourcesContent: false,
 	platform: "node",
 	outfile: "dist/extension.js",
-	external: ["vscode", "onnxruntime-node", "@lancedb/lancedb-linux-x64-gnu"],
+	external: ["vscode", "onnxruntime-node", "*.node", "@lancedb/lancedb", "apache-arrow", lancedbPlatformModule],
 }
 
 async function main() {

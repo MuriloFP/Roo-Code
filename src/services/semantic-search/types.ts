@@ -10,6 +10,7 @@ export interface CodeDefinition {
 	language: string
 	context?: string
 	contentHash?: string
+	lastQuery?: string
 }
 
 export interface Storage {
@@ -35,9 +36,21 @@ export enum SearchResultType {
 	Code = "code",
 }
 
+export interface SearchResultMetadata {
+	type: string
+	name: string
+	filePath: string
+	language: string
+	score: number
+	startLine?: number
+	endLine?: number
+}
+
 export interface SearchResultBase {
 	filePath: string
-	metadata: Omit<CodeDefinition, "contentHash">
+	snippets: string[]
+	lineRanges: Array<{ start: number; end: number }>
+	metadata: SearchResultMetadata
 }
 
 export interface FileSearchResult extends SearchResultBase {

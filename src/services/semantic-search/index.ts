@@ -74,6 +74,9 @@ export class SemanticSearchService {
 
 	// Maximum size for text files (5MB)
 	private static readonly MAX_TEXT_FILE_SIZE = 5 * 1024 * 1024
+	private static readonly SNIPPET_CONTEXT_LINES = 3 // Lines of context around matches
+	private static readonly MAX_SNIPPET_LENGTH = 1000 // Maximum characters per snippet
+	private static readonly MAX_SNIPPETS_PER_FILE = 3 // Maximum number of snippets to extract
 
 	private static async isTextFile(filePath: string): Promise<boolean> {
 		const stats = await vscode.workspace.fs.stat(vscode.Uri.file(filePath))
@@ -199,24 +202,36 @@ export class SemanticSearchService {
 	 * @returns {Promise<void>} Resolves when initialization is complete
 	 */
 	async initialize(): Promise<void> {
+		if (this.initialized) {
+			console.log("Semantic search service already initialized")
+			return
+		}
+
 		this.updateStatus(WorkspaceIndexStatus.Indexing)
+		this.initializationError = null
 
 		try {
 			const startTime = Date.now()
-			// Keep only essential initialization logs
 			console.log("Initializing semantic search service")
 
+			// Initialize store first
+			console.log("Initializing vector store...")
 			const workspaceId = this.getWorkspaceId(this.config.context)
 			this.store = new LanceDBVectorStore(path.join(this.config.storageDir, "lancedb"), workspaceId)
-			await this.store.initialize()
 
-			const storeSize = this.store.size()
-			if (storeSize === 0) {
-				this.updateStatus(WorkspaceIndexStatus.NotIndexed)
-				return
+			try {
+				await this.store.initialize()
+				console.log("Vector store initialized successfully")
+			} catch (error) {
+				console.error("Failed to initialize vector store:", error)
+				throw new Error(`Vector store initialization failed: ${error}`)
 			}
 
-			// Initialize model
+			const storeSize = this.store.size()
+			console.log(`Current vector store size: ${storeSize} records`)
+
+			// Initialize model with retries
+			console.log("Initializing embedding model...")
 			const MAX_INIT_ATTEMPTS = 3
 			let initAttempt = 0
 			let modelInitError: Error | null = null
@@ -225,12 +240,17 @@ export class SemanticSearchService {
 				try {
 					await this.model.initialize()
 					modelInitError = null
+					console.log("Embedding model initialized successfully")
 					break
 				} catch (error) {
 					initAttempt++
 					modelInitError = error instanceof Error ? error : new Error(String(error))
+					console.error(`Model initialization attempt ${initAttempt} failed:`, error)
+
 					if (initAttempt < MAX_INIT_ATTEMPTS) {
-						await new Promise((resolve) => setTimeout(resolve, 1000 * initAttempt))
+						const delay = Math.min(1000 * Math.pow(2, initAttempt), 5000)
+						console.log(`Waiting ${delay}ms before retry...`)
+						await new Promise((resolve) => setTimeout(resolve, delay))
 					}
 				}
 			}
@@ -239,35 +259,36 @@ export class SemanticSearchService {
 				throw modelInitError
 			}
 
-			const initDuration = Date.now() - startTime
-			console.log(`Embedding model initialization completed in ${initDuration}ms`)
-
-			// Verify model is truly initialized
+			// Verify model initialization
 			if (!this.model.isInitialized()) {
-				throw new Error("Model initialization failed: isInitialized() returned false")
+				throw new Error("Model initialization verification failed: isInitialized() returned false")
 			}
 
-			// Perform a test embedding to ensure model works
+			// Perform test embedding
 			try {
-				const testEmbedding = await this.model.embed("Test embedding to verify initialization")
-				console.log(`Test embedding generated successfully. Dimension: ${testEmbedding.dimension}`)
-			} catch (embedError) {
-				console.error("Failed to generate test embedding:", embedError)
-				throw new Error(
-					`Model initialization verification failed: ${embedError instanceof Error ? embedError.message : String(embedError)}`,
-				)
+				console.log("Performing test embedding...")
+				const testResult = await this.model.embed("Test embedding")
+				if (!testResult || !testResult.values || testResult.values.length !== this.model.dimension) {
+					throw new Error(
+						`Test embedding failed: invalid output dimension (expected ${this.model.dimension})`,
+					)
+				}
+				console.log("Test embedding successful")
+			} catch (error) {
+				console.error("Test embedding failed:", error)
+				throw new Error(`Model verification failed: ${error}`)
 			}
 
-			// Keep only essential success log
-			console.log("Semantic search service initialized successfully")
+			const initDuration = Date.now() - startTime
+			console.log(`Semantic search service initialization completed in ${initDuration}ms`)
+
 			this.initialized = true
-			this.updateStatus(WorkspaceIndexStatus.Indexed)
+			this.updateStatus(storeSize === 0 ? WorkspaceIndexStatus.NotIndexed : WorkspaceIndexStatus.Indexed)
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error)
-			console.error("Initialization failed:", errorMessage)
-			this.updateStatus(WorkspaceIndexStatus.NotIndexed)
-			this.initializationError = error instanceof Error ? error : new Error(errorMessage)
+			console.error("Semantic search service initialization failed:", error)
+			this.initializationError = error instanceof Error ? error : new Error(String(error))
 			this.initialized = false
+			this.updateStatus(WorkspaceIndexStatus.NotIndexed)
 			throw error
 		}
 	}
@@ -402,43 +423,65 @@ export class SemanticSearchService {
 		await this.store.add(vector, definition)
 	}
 
-	async search(query: string): Promise<SearchResult[]> {
-		try {
-			await this.ensureInitialized()
+	private extractSnippets(
+		content: string,
+		query: string,
+	): { snippets: string[]; lineRanges: Array<{ start: number; end: number }> } {
+		const lines = content.split("\n")
+		const snippets: string[] = []
+		const lineRanges: Array<{ start: number; end: number }> = []
 
-			const storeSize = this.size()
-			if (storeSize === 0) {
-				return []
+		// Create a simplified version of content for matching (lowercase, no punctuation)
+		const simplifiedContent = content.toLowerCase().replace(/[^\w\s]/g, "")
+		const simplifiedQuery = query.toLowerCase().replace(/[^\w\s]/g, "")
+		const queryTerms = simplifiedQuery.split(/\s+/).filter((term) => term.length > 2)
+
+		// Find matches for each term
+		const matchingLines = new Set<number>()
+		lines.forEach((line, index) => {
+			const simplifiedLine = line.toLowerCase().replace(/[^\w\s]/g, "")
+			if (queryTerms.some((term) => simplifiedLine.includes(term))) {
+				matchingLines.add(index)
 			}
+		})
 
-			const queryVector = await this.model.embed(query)
-			const results = await this.store.search(
-				queryVector,
-				this.config.maxResults ? this.config.maxResults * 2 : 20,
-			)
+		// Group nearby matching lines into snippets
+		const processedLines = new Set<number>()
+		Array.from(matchingLines)
+			.sort((a, b) => a - b)
+			.forEach((lineNum) => {
+				if (processedLines.has(lineNum)) return
 
-			const dedupedResults = this.deduplicateResults(results)
-			const maxResults = this.config.maxResults ?? 10
-			const finalResults: VectorSearchResult[] = []
+				// Find snippet range
+				let startLine = Math.max(0, lineNum - SemanticSearchService.SNIPPET_CONTEXT_LINES)
+				let endLine = Math.min(lines.length - 1, lineNum + SemanticSearchService.SNIPPET_CONTEXT_LINES)
 
-			const codeResults = dedupedResults.filter((r) => r.metadata?.type !== "file")
-			const fileResults = dedupedResults.filter((r) => r.metadata?.type === "file")
+				// Extend range to include nearby matches
+				for (let i = lineNum + 1; i <= endLine + SemanticSearchService.SNIPPET_CONTEXT_LINES; i++) {
+					if (matchingLines.has(i)) {
+						endLine = Math.min(lines.length - 1, i + SemanticSearchService.SNIPPET_CONTEXT_LINES)
+					}
+				}
 
-			for (const result of codeResults) {
-				if (finalResults.length >= maxResults) break
-				finalResults.push(result)
-			}
+				// Mark these lines as processed
+				for (let i = startLine; i <= endLine; i++) {
+					processedLines.add(i)
+				}
 
-			for (const result of fileResults) {
-				if (finalResults.length >= maxResults) break
-				finalResults.push(result)
-			}
+				// Extract snippet
+				const snippet = lines.slice(startLine, endLine + 1).join("\n")
+				if (snippet.length <= SemanticSearchService.MAX_SNIPPET_LENGTH) {
+					snippets.push(snippet)
+					lineRanges.push({ start: startLine + 1, end: endLine + 1 })
 
-			return finalResults.slice(0, maxResults).map((r) => this.formatResult(r))
-		} catch (error) {
-			console.error("Error during semantic search:", error)
-			throw error
-		}
+					// Stop if we have enough snippets
+					if (snippets.length >= SemanticSearchService.MAX_SNIPPETS_PER_FILE) {
+						return
+					}
+				}
+			})
+
+		return { snippets, lineRanges }
 	}
 
 	private formatResult(result: VectorWithMetadata): SearchResult {
@@ -446,25 +489,47 @@ export class SemanticSearchService {
 			throw new Error("Invalid metadata in search result")
 		}
 
+		const { snippets, lineRanges } = this.extractSnippets(result.metadata.content, result.metadata.lastQuery || "")
+
 		if (result.metadata.type === SearchResultType.File) {
-			const { content, ...restMetadata } = result.metadata
 			return {
 				type: SearchResultType.File,
 				filePath: result.metadata.filePath,
 				name: result.metadata.name,
-				metadata: restMetadata,
+				snippets,
+				lineRanges,
+				metadata: {
+					type: result.metadata.type,
+					name: result.metadata.name,
+					filePath: result.metadata.filePath,
+					score: result.score,
+					language: result.metadata.language,
+					startLine: lineRanges[0]?.start,
+					endLine: lineRanges[lineRanges.length - 1]?.end,
+				},
 			} as FileSearchResult
 		}
 
+		// For code results, return only the relevant snippets
 		return {
 			type: SearchResultType.Code,
 			filePath: result.metadata.filePath,
-			content: result.metadata.content,
+			content: snippets.join("\n"), // Only include the relevant snippets
 			startLine: result.metadata.startLine,
 			endLine: result.metadata.endLine,
 			name: result.metadata.name,
 			codeType: result.metadata.type,
-			metadata: result.metadata,
+			snippets,
+			lineRanges,
+			metadata: {
+				type: result.metadata.type,
+				name: result.metadata.name,
+				filePath: result.metadata.filePath,
+				score: result.score,
+				language: result.metadata.language,
+				startLine: result.metadata.startLine,
+				endLine: result.metadata.endLine,
+			},
 		} as CodeSearchResult
 	}
 
@@ -507,5 +572,51 @@ export class SemanticSearchService {
 
 	async invalidateCache(definition: CodeDefinition): Promise<void> {
 		await this.cache.invalidate(definition)
+	}
+
+	async search(query: string): Promise<SearchResult[]> {
+		try {
+			await this.ensureInitialized()
+
+			const storeSize = this.size()
+			if (storeSize === 0) {
+				return []
+			}
+
+			const queryVector = await this.model.embed(query)
+			const results = await this.store.search(
+				queryVector,
+				this.config.maxResults ? this.config.maxResults * 2 : 20,
+			)
+
+			// Add the query to the metadata for snippet extraction
+			results.forEach((result) => {
+				if (result.metadata) {
+					result.metadata.lastQuery = query
+				}
+			})
+
+			const dedupedResults = this.deduplicateResults(results)
+			const maxResults = this.config.maxResults ?? 10
+			const finalResults: VectorSearchResult[] = []
+
+			const codeResults = dedupedResults.filter((r) => r.metadata?.type !== "file")
+			const fileResults = dedupedResults.filter((r) => r.metadata?.type === "file")
+
+			for (const result of codeResults) {
+				if (finalResults.length >= maxResults) break
+				finalResults.push(result)
+			}
+
+			for (const result of fileResults) {
+				if (finalResults.length >= maxResults) break
+				finalResults.push(result)
+			}
+
+			return finalResults.slice(0, maxResults).map((r) => this.formatResult(r))
+		} catch (error) {
+			console.error("Error during semantic search:", error)
+			throw error
+		}
 	}
 }

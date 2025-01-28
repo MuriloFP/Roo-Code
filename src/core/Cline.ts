@@ -60,7 +60,7 @@ import { BrowserSession } from "../services/browser/BrowserSession"
 import { OpenRouterHandler } from "../api/providers/openrouter"
 import { McpHub } from "../services/mcp/McpHub"
 import crypto from "crypto"
-import { SemanticSearchService } from "../services/semantic-search"
+import { SemanticSearchService, WorkspaceIndexStatus } from "../services/semantic-search"
 import { parseAssistantMessage } from "./assistant-message/parse-assistant-message"
 
 const cwd =
@@ -2805,6 +2805,12 @@ export class Cline {
 		}
 
 		try {
+			// Ensure service is initialized before use
+			const status = this.semanticSearchService.getStatus()
+			if (status !== WorkspaceIndexStatus.Indexed) {
+				await this.semanticSearchService.initialize()
+			}
+
 			const results = await this.semanticSearchService.search(query)
 
 			if (results.length === 0) {
@@ -2813,8 +2819,12 @@ export class Cline {
 
 			return results
 				.map((result) => {
-					const content = result.metadata.content ? `\n${result.metadata.content}` : ""
-					return `Found ${result.metadata.type} '${result.metadata.name}' in ${result.metadata.filePath}:${result.metadata.startLine}${content}`
+					const snippetsText = result.snippets.length > 0 ? `\n${result.snippets.join("\n")}` : ""
+					const location =
+						result.lineRanges.length > 0
+							? `${result.metadata.filePath}:${result.lineRanges[0].start}-${result.lineRanges[result.lineRanges.length - 1].end}`
+							: result.metadata.filePath
+					return `Found ${result.metadata.type} '${result.metadata.name}' in ${location}${snippetsText}`
 				})
 				.join("\n\n")
 		} catch (error) {

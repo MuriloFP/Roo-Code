@@ -46,9 +46,6 @@ import { ACTION_NAMES } from "../CodeActionProvider"
 import { SemanticSearchConfig, SemanticSearchService } from "../../services/semantic-search"
 import { listFiles } from "../../services/glob/list-files"
 
-// Add delay function at the top of the imports section
-const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
-
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
 

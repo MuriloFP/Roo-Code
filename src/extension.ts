@@ -303,35 +303,50 @@ export function deactivate() {
 }
 
 async function initializeSemanticSearchService(context: vscode.ExtensionContext): Promise<SemanticSearchService> {
-	const cacheDir = path.join(context.globalStorageUri.fsPath, "cache")
-	await fs.mkdir(cacheDir, { recursive: true })
+	try {
+		outputChannel.appendLine("Starting semantic search service initialization...")
+		const cacheDir = path.join(context.globalStorageUri.fsPath, "cache")
+		outputChannel.appendLine(`Using cache directory: ${cacheDir}`)
 
-	const config: SemanticSearchConfig = {
-		storageDir: cacheDir,
-		context: context,
-		maxResults: (await context.globalState.get("semanticSearchMaxResults")) as number | undefined,
+		// Ensure the directory exists with proper permissions
+		try {
+			await fs.access(cacheDir)
+			outputChannel.appendLine("Cache directory exists")
+		} catch {
+			outputChannel.appendLine("Creating cache directory...")
+			try {
+				await fs.mkdir(cacheDir, { recursive: true })
+				outputChannel.appendLine("Cache directory created successfully")
+			} catch (error) {
+				outputChannel.appendLine(`Failed to create cache directory: ${error}`)
+				throw error
+			}
+		}
+
+		const config: SemanticSearchConfig = {
+			storageDir: cacheDir,
+			context: context,
+			maxResults: (await context.globalState.get("semanticSearchMaxResults")) as number | undefined,
+		}
+
+		outputChannel.appendLine("Creating semantic search service...")
+		const service = new SemanticSearchService(config)
+
+		outputChannel.appendLine("Initializing semantic search service...")
+		try {
+			await service.initialize()
+			outputChannel.appendLine("Semantic search service initialized successfully")
+		} catch (error) {
+			outputChannel.appendLine(`Failed to initialize semantic search service: ${error}`)
+			throw error
+		}
+
+		return service
+	} catch (error) {
+		outputChannel.appendLine(`Error initializing semantic search service: ${error}`)
+		if (error instanceof Error) {
+			outputChannel.appendLine(`Stack trace: ${error.stack}`)
+		}
+		throw error
 	}
-
-	const service = new SemanticSearchService(config)
-
-	await service.initialize()
-
-	return service
-}
-
-async function initializeSemanticSearchService(context: vscode.ExtensionContext): Promise<SemanticSearchService> {
-	const cacheDir = path.join(context.globalStorageUri.fsPath, "cache")
-	await fs.mkdir(cacheDir, { recursive: true })
-
-	const config: SemanticSearchConfig = {
-		storageDir: cacheDir,
-		context: context,
-		maxResults: (await context.globalState.get("semanticSearchMaxResults")) as number | undefined,
-	}
-
-	const service = new SemanticSearchService(config)
-
-	await service.initialize()
-
-	return service
 }

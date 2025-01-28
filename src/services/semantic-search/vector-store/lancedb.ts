@@ -47,6 +47,10 @@ export class LanceDBVectorStore implements VectorStore {
 	}
 
 	async add(vector: Vector, metadata: CodeDefinition): Promise<void> {
+		if (!this.table) {
+			await this.initialize()
+		}
+
 		await this.table.add([
 			{
 				vector: vector.values,
@@ -60,6 +64,10 @@ export class LanceDBVectorStore implements VectorStore {
 	}
 
 	async addBatch(vectors: VectorWithMetadata[]): Promise<void> {
+		if (!this.table) {
+			await this.initialize()
+		}
+
 		const records = vectors.map(({ vector, metadata }) => ({
 			vector: vector.values,
 			id: this.generateId(metadata),
@@ -73,6 +81,10 @@ export class LanceDBVectorStore implements VectorStore {
 	}
 
 	async search(queryVector: Vector, k: number): Promise<VectorSearchResult[]> {
+		if (!this.table) {
+			await this.initialize()
+		}
+
 		const reranker = await lancedb.rerankers.RRFReranker.create(k)
 		const results = await this.table.vectorSearch(queryVector.values).limit(k).rerank(reranker).toArray()
 
@@ -93,8 +105,10 @@ export class LanceDBVectorStore implements VectorStore {
 	async clear(): Promise<void> {
 		const tableName = `${this.tablePrefix}-${this.workspaceId}`
 		try {
-			await this.connection.dropTable(tableName)
-			console.log(`Successfully dropped table: ${tableName}`)
+			if (this.connection) {
+				await this.connection.dropTable(tableName)
+				console.log(`Successfully dropped table: ${tableName}`)
+			}
 		} catch (error) {
 			if (error instanceof Error && error.message.includes("Table not found")) {
 				console.log(`Table ${tableName} already removed`)
@@ -104,9 +118,11 @@ export class LanceDBVectorStore implements VectorStore {
 		}
 
 		// Reset internal state
-		this.table = null as unknown as Table
 		this._size = 0
 		this.indexCreated = false
+
+		// Reinitialize with empty table
+		await this.initialize()
 	}
 
 	private _size = 0

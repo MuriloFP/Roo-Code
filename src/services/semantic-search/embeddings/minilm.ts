@@ -2,6 +2,7 @@ import { pipeline, FeatureExtractionPipeline } from "@huggingface/transformers"
 import { EmbeddingModel, ModelConfig } from "./types"
 import { Vector } from "../vector-store/types"
 import { CodeDefinition } from "../types"
+import fs from "fs/promises"
 
 const MODEL_NAME = "sentence-transformers/all-MiniLM-L12-v2"
 
@@ -19,35 +20,98 @@ export class MiniLMModel implements EmbeddingModel {
 
 	async initialize(): Promise<void> {
 		if (this.initialized) {
+			console.log("Model already initialized, skipping initialization")
 			return
 		}
 
 		if (this.initializationPromise) {
+			console.log("Model initialization already in progress, waiting...")
 			await this.initializationPromise
 			return
 		}
 
-		this.initializationPromise = (async () => {
-			try {
-				this.pipe = await pipeline("feature-extraction", MODEL_NAME, {
-					revision: "main",
-					cache_dir: this.config.modelPath,
-					device: "cpu",
-				})
+		const maxRetries = 3
+		let retryCount = 0
 
-				this.initialized = true
+		const initializeInternal = async () => {
+			while (retryCount < maxRetries) {
+				try {
+					console.log(`Starting MiniLM model initialization (attempt ${retryCount + 1}/${maxRetries})...`)
+					console.log(`Using model cache directory: ${this.config.modelPath}`)
 
-				console.log("Embedding model initialized successfully")
-			} catch (error) {
-				console.error("Error during initialization:", error)
-				this.initialized = false
-				throw error
-			} finally {
-				this.initializationPromise = null
+					// Ensure model directory exists
+					try {
+						await fs.access(this.config.modelPath)
+						console.log("Model directory exists")
+					} catch {
+						console.log("Creating model directory...")
+						try {
+							await fs.mkdir(this.config.modelPath, { recursive: true })
+							console.log("Model directory created successfully")
+						} catch (error) {
+							console.error("Failed to create model directory:", error)
+							throw new Error(`Failed to create model directory: ${error}`)
+						}
+					}
+
+					console.log("Creating feature extraction pipeline...")
+					this.pipe = await pipeline("feature-extraction", MODEL_NAME, {
+						revision: "main",
+						cache_dir: this.config.modelPath,
+						device: "cpu",
+					})
+					console.log("Pipeline created successfully")
+
+					// Verify the pipeline is working with a test input
+					console.log("Testing pipeline with sample input...")
+					const testOutput = await this.pipe("Test input", {
+						pooling: "mean",
+						normalize: true,
+					})
+
+					if (!testOutput || !testOutput.data) {
+						throw new Error("Pipeline test failed: no output generated")
+					}
+
+					// Verify the output dimensions
+					const testValues = Array.isArray(testOutput.data)
+						? testOutput.data
+						: Array.from(testOutput.data as Float32Array)
+					if (testValues.length !== this.dimension) {
+						throw new Error(
+							`Pipeline output dimension mismatch: expected ${this.dimension}, got ${testValues.length}`,
+						)
+					}
+
+					console.log("Pipeline test successful")
+					this.initialized = true
+					console.log("MiniLM model initialized successfully")
+					return
+				} catch (error) {
+					console.error(`Initialization attempt ${retryCount + 1} failed:`, error)
+					this.pipe = undefined
+					this.initialized = false
+					retryCount++
+
+					if (retryCount >= maxRetries) {
+						console.error("Max retries reached, initialization failed")
+						throw error
+					}
+
+					// Wait before retrying
+					const delay = Math.min(1000 * Math.pow(2, retryCount), 5000) // Exponential backoff, max 5 seconds
+					console.log(`Waiting ${delay}ms before retry...`)
+					await new Promise((resolve) => setTimeout(resolve, delay))
+				}
 			}
-		})()
+		}
 
-		await this.initializationPromise
+		try {
+			this.initializationPromise = initializeInternal()
+			await this.initializationPromise
+		} finally {
+			this.initializationPromise = null
+		}
 	}
 
 	private normalizeVector(values: number[]): number[] {
