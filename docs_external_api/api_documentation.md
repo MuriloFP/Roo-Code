@@ -7,10 +7,13 @@ The RooCode External API Server provides HTTP endpoints for programmatically int
 ### Base URL
 
 By default, the server runs on `http://localhost:3000`. The host and port can be configured through the RooCode settings.
+![image](https://github.com/user-attachments/assets/bf53901a-3c1a-45f5-8c09-4b023066aa40)
 
 ### Authentication
 
 The API uses CORS (Cross-Origin Resource Sharing) for access control. By default, only localhost origins are allowed. Additional origins can be configured through the RooCode settings.
+![image](https://github.com/user-attachments/assets/49b9112d-b452-4abd-81ce-349853bee261)
+
 
 ### Response Format
 

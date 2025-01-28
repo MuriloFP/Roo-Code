@@ -32,7 +32,7 @@ The External API Server is implemented as an Express.js application that provide
 3. **Configuration Management**
 
     - CORS settings with configurable allowed hosts
-    - Port configuration (default: 3002)
+    - Port configuration (default: 3000)
     - Auto-approve settings
     - MCP integration settings
 
