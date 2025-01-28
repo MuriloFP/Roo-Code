@@ -14,7 +14,6 @@ By default, the server runs on `http://localhost:3000`. The host and port can be
 The API uses CORS (Cross-Origin Resource Sharing) for access control. By default, only localhost origins are allowed. Additional origins can be configured through the RooCode settings.
 ![image](https://github.com/user-attachments/assets/49b9112d-b452-4abd-81ce-349853bee261)
 
-
 ### Response Format
 
 All responses are in JSON format. Successful responses typically include either a `success: true` field or the requested data. Error responses include an `error` field with a description of what went wrong.
@@ -694,7 +693,8 @@ Retrieves the current auto-approve settings.
     "alwaysAllowExecute": boolean,      // Auto-approve command execution
     "alwaysAllowBrowser": boolean,      // Auto-approve browser actions
     "alwaysAllowMcp": boolean,         // Auto-approve MCP operations
-    "alwaysApproveResubmit": boolean   // Auto-approve request retries
+    "alwaysApproveResubmit": boolean,   // Auto-approve request retries
+    "alwaysAllowModeSwitch": boolean,   // Auto-approve mode switching
 }
 ```
 
@@ -718,7 +718,8 @@ Updates the auto-approve settings. You can update any combination of settings.
     "alwaysAllowExecute": boolean,      // Optional: Command execution
     "alwaysAllowBrowser": boolean,      // Optional: Browser actions
     "alwaysAllowMcp": boolean,         // Optional: MCP operations
-    "alwaysApproveResubmit": boolean   // Optional: Request retries
+    "alwaysApproveResubmit": boolean,   // Optional: Request retries
+    "alwaysAllowModeSwitch": boolean,   // Optional: Mode switching
 }
 ```
 
@@ -800,10 +801,12 @@ new_settings = {
     "alwaysAllowExecute": False,
     "alwaysAllowBrowser": True,
     "alwaysAllowMcp": False,
-    "alwaysApproveResubmit": True
+    "alwaysApproveResubmit": True,
+    "alwaysAllowModeSwitch": True
 }
 result = update_auto_approve_settings(new_settings)
 print("Update result:", result)
+
 
 # Toggle master switch
 result = set_auto_approve_enabled(False)

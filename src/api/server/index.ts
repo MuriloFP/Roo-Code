@@ -722,6 +722,7 @@ export class ExternalApiServer {
 					alwaysAllowBrowser: state.alwaysAllowBrowser ?? false,
 					alwaysAllowMcp: state.alwaysAllowMcp ?? false,
 					alwaysApproveResubmit: state.alwaysApproveResubmit ?? false,
+					alwaysAllowModeSwitch: state.alwaysAllowModeSwitch ?? false,
 				})
 			} catch (error) {
 				console.error("Error getting auto-approve settings:", error)
@@ -740,6 +741,7 @@ export class ExternalApiServer {
 					alwaysAllowBrowser,
 					alwaysAllowMcp,
 					alwaysApproveResubmit,
+					alwaysAllowModeSwitch,
 				} = req.body
 
 				// Validate all fields are boolean
@@ -751,6 +753,7 @@ export class ExternalApiServer {
 					alwaysAllowBrowser,
 					alwaysAllowMcp,
 					alwaysApproveResubmit,
+					alwaysAllowModeSwitch,
 				}
 
 				for (const [key, value] of Object.entries(settings)) {
@@ -782,6 +785,12 @@ export class ExternalApiServer {
 					await this.clineApi.sidebarProvider.updateGlobalState(
 						"alwaysApproveResubmit",
 						alwaysApproveResubmit,
+					)
+				}
+				if (alwaysAllowModeSwitch !== undefined) {
+					await this.clineApi.sidebarProvider.updateGlobalState(
+						"alwaysAllowModeSwitch",
+						alwaysAllowModeSwitch,
 					)
 				}
 
