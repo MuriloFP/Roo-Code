@@ -1,7 +1,5 @@
 export type AssistantMessageContent = TextContent | ToolUse
 
-export { parseAssistantMessage } from "./parse-assistant-message"
-
 export interface TextContent {
 	type: "text"
 	content: string
@@ -21,6 +19,7 @@ export const toolUseNames = [
 	"access_mcp_resource",
 	"ask_followup_question",
 	"attempt_completion",
+	"semantic_search",
 	"switch_mode",
 ] as const
 
@@ -48,6 +47,7 @@ export const toolParamNames = [
 	"diff",
 	"start_line",
 	"end_line",
+	"query",
 	"mode_slug",
 	"reason",
 ] as const
@@ -116,6 +116,11 @@ export interface AskFollowupQuestionToolUse extends ToolUse {
 export interface AttemptCompletionToolUse extends ToolUse {
 	name: "attempt_completion"
 	params: Partial<Pick<Record<ToolParamName, string>, "result" | "command">>
+}
+
+export interface SemanticSearchToolUse extends ToolUse {
+	name: "semantic_search"
+	params: Partial<Pick<Record<ToolParamName, string>, "query">>
 }
 
 export interface SwitchModeToolUse extends ToolUse {

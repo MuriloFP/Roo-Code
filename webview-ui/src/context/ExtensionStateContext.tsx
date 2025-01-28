@@ -68,6 +68,8 @@ export interface ExtensionStateContextType extends ExtensionState {
 	autoApprovalEnabled?: boolean
 	setAutoApprovalEnabled: (value: boolean) => void
 	handleInputChange: (field: keyof ApiConfiguration) => (event: any) => void
+	semanticSearchStatus: string
+	setSemanticSearchStatus: (status: string) => void
 	customModes: ModeConfig[]
 	setCustomModes: (value: ModeConfig[]) => void
 	externalApiEnabled?: boolean
@@ -105,6 +107,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		enhancementApiConfigId: "",
 		experimentalDiffStrategy: false,
 		autoApprovalEnabled: false,
+		semanticSearchStatus: "Not Indexed",
 		customModes: [],
 		externalApiEnabled: false,
 		externalApiPort: 3000,
@@ -299,6 +302,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 			setState((prevState) => ({ ...prevState, experimentalDiffStrategy: value })),
 		setAutoApprovalEnabled: (value) => setState((prevState) => ({ ...prevState, autoApprovalEnabled: value })),
 		handleInputChange,
+		semanticSearchStatus: state.semanticSearchStatus,
+		setSemanticSearchStatus: (status) => setState((prevState) => ({ ...prevState, semanticSearchStatus: status })),
 		setCustomModes: (value) => setState((prevState) => ({ ...prevState, customModes: value })),
 		setExternalApiEnabled,
 		setExternalApiPort,

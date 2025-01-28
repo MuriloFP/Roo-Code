@@ -39,6 +39,7 @@ export interface ExtensionMessage {
 		| "updatePrompt"
 		| "systemPrompt"
 		| "autoApprovalEnabled"
+		| "indexingProgress"
 		| "updateCustomMode"
 		| "deleteCustomMode"
 		| "externalApiEnabled"
@@ -66,6 +67,11 @@ export interface ExtensionMessage {
 	commits?: GitCommit[]
 	listApiConfig?: ApiConfigMeta[]
 	mode?: Mode
+	indexingProgress?: {
+		current: number
+		total: number
+		status: string
+	}
 	customMode?: ModeConfig
 	slug?: string
 }
@@ -112,6 +118,7 @@ export interface ExtensionState {
 	enhancementApiConfigId?: string
 	experimentalDiffStrategy?: boolean
 	autoApprovalEnabled?: boolean
+	semanticSearchStatus: string
 	customModes: ModeConfig[]
 	toolRequirements?: Record<string, boolean>
 	externalApiEnabled?: boolean
@@ -163,22 +170,24 @@ export type ClineSay =
 	| "mcp_server_request_started"
 	| "mcp_server_response"
 
-export interface ClineSayTool {
+export type ClineSayTool = {
 	tool:
 		| "editedExistingFile"
-		| "appliedDiff"
 		| "newFileCreated"
+		| "appliedDiff"
 		| "readFile"
 		| "listFilesTopLevel"
 		| "listFilesRecursive"
 		| "listCodeDefinitionNames"
 		| "searchFiles"
+		| "semanticSearch"
 		| "switchMode"
 	path?: string
 	diff?: string
 	content?: string
 	regex?: string
 	filePattern?: string
+	query?: string
 	mode?: string
 	reason?: string
 }

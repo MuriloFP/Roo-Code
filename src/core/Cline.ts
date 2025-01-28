@@ -49,7 +49,7 @@ import { calculateApiCost } from "../utils/cost"
 import { fileExistsAtPath } from "../utils/fs"
 import { arePathsEqual, getReadablePath } from "../utils/path"
 import { parseMentions } from "./mentions"
-import { AssistantMessageContent, parseAssistantMessage, ToolParamName, ToolUseName } from "./assistant-message"
+import { AssistantMessageContent, ToolParamName, ToolUseName } from "./assistant-message"
 import { formatResponse } from "./prompts/responses"
 import { SYSTEM_PROMPT } from "./prompts/system"
 import { modes, defaultModeSlug, getModeBySlug } from "../shared/modes"
@@ -60,6 +60,8 @@ import { BrowserSession } from "../services/browser/BrowserSession"
 import { OpenRouterHandler } from "../api/providers/openrouter"
 import { McpHub } from "../services/mcp/McpHub"
 import crypto from "crypto"
+import { SemanticSearchService } from "../services/semantic-search"
+import { parseAssistantMessage } from "./assistant-message/parse-assistant-message"
 
 const cwd =
 	vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0) ?? path.join(os.homedir(), "Desktop") // may or may not exist but fs checking existence would immediately ask for permission which would be bad UX, need to come up with a better solution
@@ -106,6 +108,8 @@ export class Cline {
 	private didAlreadyUseTool = false
 	private didCompleteReadingStream = false
 
+	private semanticSearchService?: SemanticSearchService
+
 	constructor(
 		provider: ClineProvider,
 		apiConfiguration: ApiConfiguration,
@@ -116,6 +120,7 @@ export class Cline {
 		images?: string[] | undefined,
 		historyItem?: HistoryItem | undefined,
 		experimentalDiffStrategy: boolean = false,
+		semanticSearchService?: SemanticSearchService,
 	) {
 		if (!task && !images && !historyItem) {
 			throw new Error("Either historyItem or task/images must be provided")
@@ -138,6 +143,8 @@ export class Cline {
 
 		// Initialize diffStrategy based on current state
 		this.updateDiffStrategy(experimentalDiffStrategy)
+
+		this.semanticSearchService = semanticSearchService
 
 		if (task || images) {
 			this.startTask(task, images)
@@ -1021,6 +1028,10 @@ export class Cline {
 						case "ask_followup_question":
 							return `[${block.name} for '${block.params.question}']`
 						case "attempt_completion":
+							return `[${block.name}]`
+						case "semantic_search":
+							return `[${block.name} for '${block.params.query}']`
+						default:
 							return `[${block.name}]`
 						case "switch_mode":
 							return `[${block.name} to '${block.params.mode_slug}'${block.params.reason ? ` because: ${block.params.reason}` : ""}]`
@@ -2211,6 +2222,44 @@ export class Cline {
 							break
 						}
 					}
+					case "semantic_search": {
+						const query: string | undefined = block.params.query
+						const sharedMessageProps: ClineSayTool = {
+							tool: "semanticSearch",
+							query: removeClosingTag("query", query),
+						}
+						try {
+							if (block.partial) {
+								const partialMessage = JSON.stringify({
+									...sharedMessageProps,
+									content: "",
+								} satisfies ClineSayTool)
+								await this.ask("tool", partialMessage, block.partial).catch(() => {})
+								break
+							} else {
+								if (!query) {
+									this.consecutiveMistakeCount++
+									pushToolResult(await this.sayAndCreateMissingParamError("semantic_search", "query"))
+									break
+								}
+								this.consecutiveMistakeCount = 0
+								const result = await this.handleSemanticSearch(query)
+								const completeMessage = JSON.stringify({
+									...sharedMessageProps,
+									content: result,
+								} satisfies ClineSayTool)
+								const didApprove = await askApproval("tool", completeMessage)
+								if (!didApprove) {
+									break
+								}
+								pushToolResult(result)
+								break
+							}
+						} catch (error) {
+							await handleError("semantic search", error)
+							break
+						}
+					}
 				}
 				break
 		}
@@ -2748,5 +2797,28 @@ export class Cline {
 		}
 
 		return `<environment_details>\n${details.trim()}\n</environment_details>`
+	}
+
+	private async handleSemanticSearch(query: string): Promise<string> {
+		if (!this.semanticSearchService || !(this.semanticSearchService instanceof SemanticSearchService)) {
+			return "Semantic search service is not available."
+		}
+
+		try {
+			const results = await this.semanticSearchService.search(query)
+
+			if (results.length === 0) {
+				return "No relevant code found."
+			}
+
+			return results
+				.map((result) => {
+					const content = result.metadata.content ? `\n${result.metadata.content}` : ""
+					return `Found ${result.metadata.type} '${result.metadata.name}' in ${result.metadata.filePath}:${result.metadata.startLine}${content}`
+				})
+				.join("\n\n")
+		} catch (error) {
+			return `Error performing semantic search: ${error instanceof Error ? error.message : String(error)}`
+		}
 	}
 }

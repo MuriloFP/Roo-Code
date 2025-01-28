@@ -395,7 +395,7 @@ describe("SYSTEM_PROMPT", () => {
 			customModePrompts,
 			undefined,
 		)
-
+		console.log(prompt)
 		// Should use the default mode's role definition
 		expect(prompt.indexOf(modes[0].roleDefinition)).toBeLessThan(prompt.indexOf("TOOL USE"))
 	})

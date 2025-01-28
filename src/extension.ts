@@ -9,6 +9,9 @@ import { ACTION_NAMES, CodeActionProvider } from "./core/CodeActionProvider"
 import { DIFF_VIEW_URI_SCHEME } from "./integrations/editor/DiffViewProvider"
 import { ExternalApiServer } from "./api/server"
 import { ClineAPI } from "./exports"
+import { SemanticSearchConfig, SemanticSearchService } from "./services/semantic-search"
+import * as path from "path"
+import fs from "fs/promises"
 
 /*
 Built using https://github.com/microsoft/vscode-webview-ui-toolkit
@@ -37,7 +40,9 @@ export async function activate(context: vscode.ExtensionContext) {
 		context.globalState.update("allowedCommands", defaultCommands)
 	}
 
-	const sidebarProvider = new ClineProvider(context, outputChannel)
+	const semanticSearchService = initializeSemanticSearchService(context)
+
+	const sidebarProvider = new ClineProvider(context, outputChannel, semanticSearchService)
 
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(ClineProvider.sideBarId, sidebarProvider, {
@@ -295,4 +300,38 @@ export async function activate(context: vscode.ExtensionContext) {
 // This method is called when your extension is deactivated
 export function deactivate() {
 	outputChannel.appendLine("Roo-Code extension deactivated")
+}
+
+async function initializeSemanticSearchService(context: vscode.ExtensionContext): Promise<SemanticSearchService> {
+	const cacheDir = path.join(context.globalStorageUri.fsPath, "cache")
+	await fs.mkdir(cacheDir, { recursive: true })
+
+	const config: SemanticSearchConfig = {
+		storageDir: cacheDir,
+		context: context,
+		maxResults: (await context.globalState.get("semanticSearchMaxResults")) as number | undefined,
+	}
+
+	const service = new SemanticSearchService(config)
+
+	await service.initialize()
+
+	return service
+}
+
+async function initializeSemanticSearchService(context: vscode.ExtensionContext): Promise<SemanticSearchService> {
+	const cacheDir = path.join(context.globalStorageUri.fsPath, "cache")
+	await fs.mkdir(cacheDir, { recursive: true })
+
+	const config: SemanticSearchConfig = {
+		storageDir: cacheDir,
+		context: context,
+		maxResults: (await context.globalState.get("semanticSearchMaxResults")) as number | undefined,
+	}
+
+	const service = new SemanticSearchService(config)
+
+	await service.initialize()
+
+	return service
 }
