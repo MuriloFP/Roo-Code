@@ -57,6 +57,8 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 		setExternalApiEnabled,
 		externalApiPort,
 		setExternalApiPort,
+		alwaysAllowModeSwitch,
+		setAlwaysAllowModeSwitch,
 	} = useExtensionState()
 	const [apiErrorMessage, setApiErrorMessage] = useState<string | undefined>(undefined)
 	const [modelIdErrorMessage, setModelIdErrorMessage] = useState<string | undefined>(undefined)
@@ -101,6 +103,7 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 				type: "externalApiSettings",
 				values: { enabled: externalApiEnabled, port: externalApiPort },
 			})
+			vscode.postMessage({ type: "alwaysAllowModeSwitch", bool: alwaysAllowModeSwitch })
 			onDone()
 		}
 	}
@@ -333,6 +336,17 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 						<p style={{ fontSize: "12px", marginTop: "5px", color: "var(--vscode-descriptionForeground)" }}>
 							Enable auto-approval of individual MCP tools in the MCP Servers view (requires both this
 							setting and the tool's individual "Always allow" checkbox)
+						</p>
+					</div>
+
+					<div style={{ marginBottom: 15 }}>
+						<VSCodeCheckbox
+							checked={alwaysAllowModeSwitch}
+							onChange={(e: any) => setAlwaysAllowModeSwitch(e.target.checked)}>
+							<span style={{ fontWeight: "500" }}>Always approve mode switching</span>
+						</VSCodeCheckbox>
+						<p style={{ fontSize: "12px", marginTop: "5px", color: "var(--vscode-descriptionForeground)" }}>
+							Automatically switch between different AI modes without requiring approval
 						</p>
 					</div>
 
