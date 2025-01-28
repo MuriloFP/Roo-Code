@@ -6,6 +6,7 @@ import { McpServer } from "./mcp"
 import { GitCommit } from "../utils/git"
 import { Mode, CustomModePrompts, ModeConfig } from "./modes"
 import { CustomSupportPrompts } from "./support-prompt"
+import { ExperimentId } from "./experiments"
 
 export interface LanguageModelChatSelector {
 	vendor?: string
@@ -110,7 +111,7 @@ export interface ExtensionState {
 	mode: Mode
 	modeApiConfigs?: Record<Mode, string>
 	enhancementApiConfigId?: string
-	experimentalDiffStrategy?: boolean
+	experiments: Record<ExperimentId, boolean> // Map of experiment IDs to their enabled state
 	autoApprovalEnabled?: boolean
 	customModes: ModeConfig[]
 	toolRequirements?: Record<string, boolean>
