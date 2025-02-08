@@ -8,7 +8,7 @@ import { DIFF_VIEW_URI_SCHEME } from "./integrations/editor/DiffViewProvider"
 import { SemanticSearchConfig, SemanticSearchService } from "./services/semantic-search"
 import * as path from "path"
 import fs from "fs/promises"
-import { handleUri, registerCommands, registerCodeActions } from "./activate"
+import { handleUri, registerCommands, registerCodeActions, registerTerminalActions } from "./activate"
 
 /**
  * Built using https://github.com/microsoft/vscode-webview-ui-toolkit
@@ -83,6 +83,7 @@ export function activate(context: vscode.ExtensionContext) {
 	)
 
 	registerCodeActions(context)
+	registerTerminalActions(context)
 
 	return createClineAPI(outputChannel, sidebarProvider)
 }
