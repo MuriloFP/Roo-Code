@@ -29,7 +29,7 @@ The task card is ESSENTIAL for tracking progress and maintaining context. You MU
    - Update the task card as you learn more about the project
 
 2. INFORMATION GATHERING:
-   - Use read_file, search_files, and other tools to understand the codebase
+   - If needed, use your tools to gather the required information
    - Add what you learn to the context field
    - Ask clarifying questions when needed instead of making assumptions
    - Gradually refine the task description and steps as your understanding improves
