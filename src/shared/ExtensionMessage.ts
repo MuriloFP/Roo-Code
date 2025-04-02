@@ -69,6 +69,9 @@ export interface ExtensionMessage {
 		| "maxReadFileLine"
 		| "fileSearchResults"
 		| "toggleApiConfigPin"
+		| "taskCardData"
+		| "success"
+		| "error"
 	text?: string
 	action?:
 		| "chatButtonClicked"
@@ -105,6 +108,7 @@ export interface ExtensionMessage {
 	values?: Record<string, any>
 	requestId?: string
 	promptText?: string
+	taskId?: string
 	results?: Array<{
 		path: string
 		type: "file" | "folder"
@@ -134,6 +138,7 @@ export type ExtensionState = Pick<
 	| "alwaysAllowModeSwitch"
 	| "alwaysAllowSubtasks"
 	| "alwaysAllowExecute"
+	| "alwaysAllowTaskCards"
 	| "allowedCommands"
 	| "browserToolEnabled"
 	| "browserViewportSize"
@@ -222,6 +227,8 @@ export interface ClineSayTool {
 		| "switchMode"
 		| "newTask"
 		| "finishTask"
+		| "updateTaskCard"
+		| "getTaskCard"
 	path?: string
 	diff?: string
 	content?: string
@@ -230,6 +237,8 @@ export interface ClineSayTool {
 	mode?: string
 	reason?: string
 	isOutsideWorkspace?: boolean
+	taskId?: string
+	taskCardData?: string
 }
 
 // Must keep in sync with system prompt.

@@ -1,0 +1,23 @@
+{
+	"not_found": "タスクカードが見つかりません",
+	"edit_title": "タスクカードを編集",
+	"status": "ステータス",
+	"last_updated": "最終更新",
+	"title": "タイトル",
+	"description": "説明",
+	"steps": "ステップ",
+	"no_steps": "まだステップが追加されていません",
+	"new_step": "新しいステップを追加...",
+	"status_planned": "予定",
+	"status_in_progress": "進行中",
+	"status_completed": "完了",
+	"context": "コンテキスト",
+	"no_context": "まだコンテキスト情報が追加されていません",
+	"new_context": "コンテキスト情報を追加...",
+	"notes": "メモ",
+	"no_notes": "まだメモが追加されていません",
+	"new_note": "メモを追加...",
+	"no_comments": "コメントなし",
+	"new_comment": "新しいコメント",
+	"parent_task": "親タスク"
+}

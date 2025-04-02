@@ -1,0 +1,23 @@
+{
+	"not_found": "Targeta de tasca no trobada",
+	"edit_title": "Editar targeta de tasca",
+	"status": "Estat",
+	"last_updated": "Última actualització",
+	"title": "Títol",
+	"description": "Descripció",
+	"steps": "Passos",
+	"no_steps": "Encara no s'ha afegit cap pas",
+	"new_step": "Afegir un nou pas...",
+	"status_planned": "Planificat",
+	"status_in_progress": "En progrés",
+	"status_completed": "Completat",
+	"context": "Context",
+	"no_context": "Encara no s'ha afegit informació de context",
+	"new_context": "Afegir informació de context...",
+	"notes": "Notes",
+	"no_notes": "Encara no s'ha afegit cap nota",
+	"new_note": "Afegir una nota...",
+	"no_comments": "Sense comentaris",
+	"new_comment": "Nou comentari",
+	"parent_task": "Tasca pare"
+}

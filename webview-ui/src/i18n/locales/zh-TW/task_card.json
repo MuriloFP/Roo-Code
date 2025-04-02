@@ -1,0 +1,23 @@
+{
+	"not_found": "未找到任務卡",
+	"edit_title": "編輯任務卡",
+	"status": "狀態",
+	"last_updated": "最後更新",
+	"title": "標題",
+	"description": "描述",
+	"steps": "步驟",
+	"no_steps": "尚未添加任何步驟",
+	"new_step": "添加新步驟...",
+	"status_planned": "計劃中",
+	"status_in_progress": "進行中",
+	"status_completed": "已完成",
+	"context": "上下文",
+	"no_context": "尚未添加任何上下文信息",
+	"new_context": "添加上下文信息...",
+	"notes": "筆記",
+	"no_notes": "尚未添加任何筆記",
+	"new_note": "添加筆記...",
+	"no_comments": "沒有評論",
+	"new_comment": "新評論",
+	"parent_task": "父任務"
+}

@@ -228,6 +228,7 @@ type GlobalSettings = {
 	alwaysAllowModeSwitch?: boolean | undefined
 	alwaysAllowSubtasks?: boolean | undefined
 	alwaysAllowExecute?: boolean | undefined
+	alwaysAllowTaskCards?: boolean | undefined
 	allowedCommands?: string[] | undefined
 	browserToolEnabled?: boolean | undefined
 	browserViewportSize?: string | undefined
@@ -256,6 +257,7 @@ type GlobalSettings = {
 				experimentalDiffStrategy: boolean
 				insert_content: boolean
 				powerSteering: boolean
+				task_cards: boolean
 		  }
 		| undefined
 	language?:
@@ -293,9 +295,9 @@ type GlobalSettings = {
 				roleDefinition: string
 				customInstructions?: string | undefined
 				groups: (
-					| ("read" | "edit" | "browser" | "command" | "mcp" | "modes")
+					| ("read" | "edit" | "browser" | "command" | "mcp" | "modes" | "task_cards")
 					| [
-							"read" | "edit" | "browser" | "command" | "mcp" | "modes",
+							"read" | "edit" | "browser" | "command" | "mcp" | "modes" | "task_cards",
 							{
 								fileRegex?: string | undefined
 								description?: string | undefined

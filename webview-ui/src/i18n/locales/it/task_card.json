@@ -1,0 +1,23 @@
+{
+	"not_found": "Scheda attività non trovata",
+	"edit_title": "Modifica scheda attività",
+	"status": "Stato",
+	"last_updated": "Ultimo aggiornamento",
+	"title": "Titolo",
+	"description": "Descrizione",
+	"steps": "Passi",
+	"no_steps": "Nessun passo è stato ancora aggiunto",
+	"new_step": "Aggiungi un nuovo passo...",
+	"status_planned": "Pianificato",
+	"status_in_progress": "In corso",
+	"status_completed": "Completato",
+	"context": "Contesto",
+	"no_context": "Nessuna informazione di contesto è stata ancora aggiunta",
+	"new_context": "Aggiungi informazioni di contesto...",
+	"notes": "Note",
+	"no_notes": "Nessuna nota è stata ancora aggiunta",
+	"new_note": "Aggiungi una nota...",
+	"no_comments": "Nessun commento",
+	"new_comment": "Nuovo commento",
+	"parent_task": "Attività genitore"
+}

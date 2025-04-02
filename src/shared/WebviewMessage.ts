@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { ApiConfiguration, ApiProvider } from "./api"
 import { Mode, PromptComponent, ModeConfig } from "./modes"
+import { TaskCard } from "./task-cards"
 
 export type ClineAskResponse = "yesButtonClicked" | "noButtonClicked" | "messageResponse"
 
@@ -27,6 +28,7 @@ export interface WebviewMessage {
 		| "alwaysAllowWrite"
 		| "alwaysAllowWriteOutsideWorkspace"
 		| "alwaysAllowExecute"
+		| "alwaysAllowTaskCards"
 		| "webviewDidLaunch"
 		| "newTask"
 		| "askResponse"
@@ -42,6 +44,7 @@ export interface WebviewMessage {
 		| "resetState"
 		| "requestOllamaModels"
 		| "requestLmStudioModels"
+		| "requestVsCodeLmModels"
 		| "openImage"
 		| "openFile"
 		| "openMention"
@@ -89,7 +92,6 @@ export interface WebviewMessage {
 		| "requestDelaySeconds"
 		| "rateLimitSeconds"
 		| "setApiConfigPassword"
-		| "requestVsCodeLmModels"
 		| "mode"
 		| "updatePrompt"
 		| "updateSupportPrompt"
@@ -121,6 +123,54 @@ export interface WebviewMessage {
 		| "maxReadFileLine"
 		| "searchFiles"
 		| "toggleApiConfigPin"
+		| "getTaskCardData"
+		| "taskCardData"
+		| "updateTaskCard"
+		| "openTaskCard"
+		| "closeTaskCard"
+		| "error"
+		| "getSystemPrompt"
+		| "systemPrompt"
+		| "clearConversation"
+		| "newChat"
+		| "requestModels"
+		| "sendMessage"
+		| "exportMessage"
+		| "exportTaskAsPrompt"
+		| "exportTaskAsFile"
+		| "exportTask"
+		| "finishTask"
+		| "switchMode"
+		| "regenerateMessage"
+		| "renderContext"
+		| "checkpoints"
+		| "restoreCheckpoint"
+		| "saveCurrentCheckpoint"
+		| "deleteCheckpoint"
+		| "switchToPrompt"
+		| "submitMessage"
+		| "getSettings"
+		| "updateApiConfig"
+		| "renderApiConfig"
+		| "sendOpenRouterCallback"
+		| "sendGlamaCallback"
+		| "sendRequestyCallback"
+		| "requestCommitDiff"
+		| "checkoutCommit"
+		| "getHistoryItems"
+		| "getHistoryItem"
+		| "deleteTask"
+		| "deletePrompt"
+		| "updateCustomInstructions"
+		| "getCustomPrompt"
+		| "setCustomPrompt"
+		| "enableBrowserTool"
+		| "openUri"
+		| "enableRemoteBrowser"
+		| "enableTts"
+		| "ttsStop"
+		| "requestHistoryItemsWithFiles"
+		| "searchWorkspace"
 	text?: string
 	disabled?: boolean
 	askResponse?: ClineAskResponse
@@ -146,6 +196,9 @@ export interface WebviewMessage {
 	source?: "global" | "project"
 	requestId?: string
 	ids?: string[]
+	taskId?: string
+	taskCard?: TaskCard
+	data?: any
 }
 
 export const checkoutDiffPayloadSchema = z.object({
@@ -166,3 +219,27 @@ export const checkoutRestorePayloadSchema = z.object({
 export type CheckpointRestorePayload = z.infer<typeof checkoutRestorePayloadSchema>
 
 export type WebViewMessagePayload = CheckpointDiffPayload | CheckpointRestorePayload
+
+/**
+ * Task Card Message Schemas
+ */
+
+export const taskCardDataRequestSchema = z.object({
+	taskId: z.string(),
+})
+
+export type TaskCardDataRequest = z.infer<typeof taskCardDataRequestSchema>
+
+export const taskCardDataResponseSchema = z.object({
+	taskId: z.string(),
+	taskCard: z.any(), // This will be a TaskCard, but using any to avoid circular dependencies
+})
+
+export type TaskCardDataResponse = z.infer<typeof taskCardDataResponseSchema>
+
+export const updateTaskCardSchema = z.object({
+	taskId: z.string(),
+	taskCard: z.any(), // This will be a Partial<TaskCard>, but using any to avoid circular dependencies
+})
+
+export type UpdateTaskCardRequest = z.infer<typeof updateTaskCardSchema>

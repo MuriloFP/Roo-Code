@@ -19,7 +19,7 @@ roo-cline-*.vsix
 .vscode-test/
 
 # Docs
-docs/_site/
+docs/
 
 # Dotenv
 .env

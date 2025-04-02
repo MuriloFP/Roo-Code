@@ -14,6 +14,8 @@ import { getUseMcpToolDescription } from "./use-mcp-tool"
 import { getAccessMcpResourceDescription } from "./access-mcp-resource"
 import { getSwitchModeDescription } from "./switch-mode"
 import { getNewTaskDescription } from "./new-task"
+import { getUpdateTaskCardDescription } from "./task-cards/update-task-card"
+import { getGetTaskCardDescription } from "./task-cards/get-task-card"
 import { DiffStrategy } from "../../diff/DiffStrategy"
 import { McpHub } from "../../../services/mcp/McpHub"
 import { Mode, ModeConfig, getModeConfig, isToolAllowedForMode, getGroupName } from "../../../shared/modes"
@@ -40,6 +42,8 @@ const toolDescriptionMap: Record<string, (args: ToolArgs) => string | undefined>
 	search_and_replace: (args) => getSearchAndReplaceDescription(args),
 	apply_diff: (args) =>
 		args.diffStrategy ? args.diffStrategy.getToolDescription({ cwd: args.cwd, toolOptions: args.toolOptions }) : "",
+	update_task_card: (args) => getUpdateTaskCardDescription(args),
+	get_task_card: (args) => getGetTaskCardDescription(args),
 }
 
 export function getToolDescriptionsForMode(
@@ -76,21 +80,36 @@ export function getToolDescriptionsForMode(
 		}
 	})
 
-	// Add always available tools
-	ALWAYS_AVAILABLE_TOOLS.forEach((tool) => tools.add(tool))
+	// Add always available tools, but only if they're allowed based on experiments
+	ALWAYS_AVAILABLE_TOOLS.forEach((tool) => {
+		if (isToolAllowedForMode(tool as ToolName, mode, customModes ?? [], experiments ?? {})) {
+			tools.add(tool)
+		}
+	})
+
+	// Check if task cards experiment is disabled
+	const isTaskCardsDisabled = experiments && !experiments["task_cards"]
 
 	// Map tool descriptions for allowed tools
-	const descriptions = Array.from(tools).map((toolName) => {
-		const descriptionFn = toolDescriptionMap[toolName]
-		if (!descriptionFn) {
-			return undefined
-		}
-
-		return descriptionFn({
-			...args,
-			toolOptions: undefined, // No tool options in group-based approach
+	const descriptions = Array.from(tools)
+		.filter((toolName) => {
+			// Skip task card tools when the experiment is disabled
+			if (isTaskCardsDisabled && (toolName === "update_task_card" || toolName === "get_task_card")) {
+				return false
+			}
+			return true
 		})
-	})
+		.map((toolName) => {
+			const descriptionFn = toolDescriptionMap[toolName]
+			if (!descriptionFn) {
+				return undefined
+			}
+
+			return descriptionFn({
+				...args,
+				toolOptions: undefined, // No tool options in group-based approach
+			})
+		})
 
 	return `# Tools\n\n${descriptions.filter(Boolean).join("\n\n")}`
 }
@@ -112,4 +131,6 @@ export {
 	getSwitchModeDescription,
 	getInsertContentDescription,
 	getSearchAndReplaceDescription,
+	getUpdateTaskCardDescription,
+	getGetTaskCardDescription,
 }

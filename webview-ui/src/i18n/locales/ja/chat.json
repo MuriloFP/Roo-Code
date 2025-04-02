@@ -1,16 +1,17 @@
 {
-	"greeting": "Rooにお手伝いできることはありますか？",
+	"greeting": "Rooがお手伝いできることはありますか？",
 	"task": {
 		"title": "タスク",
 		"seeMore": "もっと見る",
-		"seeLess": "表示を減らす",
+		"seeLess": "折りたたむ",
 		"tokens": "トークン:",
 		"cache": "キャッシュ:",
 		"apiCost": "APIコスト:",
 		"contextWindow": "コンテキストウィンドウ:",
 		"closeAndStart": "タスクを閉じて新しいタスクを開始",
 		"export": "タスク履歴をエクスポート",
-		"delete": "タスクを削除（Shift + クリックで確認をスキップ）"
+		"delete": "タスクを削除（Shift + クリックで確認をスキップ）",
+		"taskCard": "タスクカードを開く"
 	},
 	"unpin": "ピン留めを解除",
 	"pin": "ピン留め",

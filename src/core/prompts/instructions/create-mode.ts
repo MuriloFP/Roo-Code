@@ -43,7 +43,8 @@ Both files should follow this structure:
        // ["edit", { fileRegex: "\\.md$", description: "Markdown files only" }],  // Edit group that only allows editing markdown files
        "browser", // Browser group (browser_action)
        "command", // Command group (execute_command)
-       "mcp"     // MCP group (use_mcp_tool, access_mcp_resource)
+       "mcp",     // MCP group (use_mcp_tool, access_mcp_resource)
+       "task_cards" // Task Cards group (update_task_card, get_task_card)
      ],
      "customInstructions": "Additional instructions for the Designer mode" // Optional
     }

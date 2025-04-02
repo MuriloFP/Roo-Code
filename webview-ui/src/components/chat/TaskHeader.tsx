@@ -380,9 +380,20 @@ export const highlightMentions = (text?: string, withShadow = true) => {
 const TaskActions = ({ item }: { item: HistoryItem | undefined }) => {
 	const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null)
 	const { t } = useTranslation()
+	const { experiments } = useExtensionState()
+	const taskCardsEnabled = experiments?.task_cards === true
 
 	return (
 		<div className="flex flex-row gap-1">
+			{taskCardsEnabled && (
+				<Button
+					variant="ghost"
+					size="sm"
+					title={t("chat:task.taskCard")}
+					onClick={() => vscode.postMessage({ type: "openTaskCard", taskId: item?.id })}>
+					<span className="codicon codicon-tasklist" />
+				</Button>
+			)}
 			<Button
 				variant="ghost"
 				size="sm"

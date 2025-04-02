@@ -53,6 +53,7 @@ import { telemetryService } from "../../services/telemetry/TelemetryService"
 import { getWorkspacePath } from "../../utils/path"
 import { webviewMessageHandler } from "./webviewMessageHandler"
 import { WebviewMessage } from "../../shared/WebviewMessage"
+import { TaskStep, TaskStepStatus } from "../../shared/task-cards"
 
 /**
  * https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -190,10 +191,171 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 	// this is used when a sub task is finished and the parent task needs to be resumed
 	async finishSubTask(lastMessage?: string) {
 		console.log(`[subtasks] finishing subtask ${lastMessage}`)
+
+		// Get the current cline (subtask) before removing it
+		const currentCline = this.getCurrentCline()
+
+		if (currentCline) {
+			// Get task card information if available and feature is enabled
+			try {
+				const state = await this.getState()
+				const experiments = state.experiments
+				// Access the globalStoragePath from the context
+				const globalStoragePath = this.context.globalStorageUri.fsPath
+				const taskCardsEnabled = experiments?.[EXPERIMENT_IDS.TASK_CARDS] === true
+
+				if (taskCardsEnabled && currentCline.taskId) {
+					// Import the function dynamically to avoid circular dependencies
+					const { getTaskCardForCompletion, getTaskCard, updateTaskCard, createTaskCard } = await import(
+						"../prompts/tools/task-cards/storage"
+					)
+
+					// Get task card completion summary
+					const taskCardSummary = await getTaskCardForCompletion(
+						this.cwd,
+						currentCline.taskId,
+						globalStoragePath,
+					)
+
+					// Append task card information to the lastMessage
+					if (taskCardSummary && lastMessage) {
+						lastMessage = `Task complete: ${currentCline.taskId}\n\nSub-task ID: ${currentCline.taskId}\n\n${lastMessage}\n\n${taskCardSummary}`
+					} else if (taskCardSummary) {
+						lastMessage = `Task complete: ${currentCline.taskId}\n\nSub-task ID: ${currentCline.taskId}\n\n${taskCardSummary}`
+					} else if (lastMessage) {
+						lastMessage = `Task complete: ${currentCline.taskId}\n\nSub-task ID: ${currentCline.taskId}\n\n${lastMessage}`
+					} else {
+						lastMessage = `Task complete: ${currentCline.taskId}\n\nSub-task ID: ${currentCline.taskId}`
+					}
+
+					// Check if this is a subtask that needs to update its parent
+					const hasParentFromCline = currentCline.parentTask && currentCline.parentStepNumber !== undefined
+					let parentTaskId = currentCline.parentTaskId
+					let parentStepNumber = currentCline.parentStepNumber
+
+					// If we don't have parent info from the Cline instance, check the task card metadata
+					if (!hasParentFromCline) {
+						// Get the current task card to check metadata
+						const currentTaskCard = await getTaskCard(this.cwd, currentCline.taskId, globalStoragePath)
+
+						if (
+							currentTaskCard?.metadata?.parent_task_id &&
+							currentTaskCard?.metadata?.parent_step_number
+						) {
+							parentTaskId = currentTaskCard.metadata.parent_task_id
+							parentStepNumber = currentTaskCard.metadata.parent_step_number
+							console.log(
+								`Found parent info in task card metadata: parentTaskId=${parentTaskId}, parentStepNumber=${parentStepNumber}`,
+							)
+						}
+					}
+
+					// Update the parent task if we have parent information
+					if (parentTaskId && parentStepNumber !== undefined) {
+						// Get the parent task card
+						let parentTaskCard = await getTaskCard(this.cwd, parentTaskId, globalStoragePath)
+
+						// Create the parent task card if it doesn't exist
+						if (!parentTaskCard) {
+							console.log(`Parent task card for ${parentTaskId} not found - creating it now`)
+							parentTaskCard = await createTaskCard(
+								this.cwd,
+								globalStoragePath,
+								{
+									task_title: `Task: ${parentTaskId}`,
+									description: "Task created automatically during subtask completion",
+									steps: [
+										{
+											step_number: parentStepNumber,
+											description: `Step ${parentStepNumber}`,
+											status: "in_progress",
+											subtask_id: currentCline.taskId,
+											comments: [],
+										},
+									],
+									context: [],
+									notes: [],
+								},
+								parentTaskId,
+							)
+						}
+
+						// Update the parent step status to completed
+						const parentSteps = await this.getParentSteps(parentTaskId, parentStepNumber)
+
+						if (parentSteps) {
+							// Update the step status to completed
+							await updateTaskCard(this.cwd, globalStoragePath, parentTaskId, { steps: parentSteps })
+
+							console.log(
+								`Updated parent task ${parentTaskId} step ${parentStepNumber} status to completed`,
+							)
+						} else {
+							console.log(`Could not find step ${parentStepNumber} in parent task ${parentTaskId}`)
+						}
+					}
+				}
+			} catch (error) {
+				console.error(`Error updating task card for subtask completion: ${error.message}`)
+			}
+		}
+
 		// remove the last cline instance from the stack (this is the finished sub task)
 		await this.removeClineFromStack()
 		// resume the last cline instance in the stack (if it exists - this is the 'parnt' calling task)
 		this.getCurrentCline()?.resumePausedTask(lastMessage)
+	}
+
+	// Helper method to get and update parent steps
+	private async getParentSteps(parentTaskId: string, stepNumber: number): Promise<TaskStep[] | null> {
+		try {
+			const globalStoragePath = this.context.globalStorageUri.fsPath
+
+			// Import the function dynamically to avoid circular dependencies
+			const { getTaskCard } = await import("../prompts/tools/task-cards/storage")
+
+			// Get the parent task card
+			const parentTaskCard = await getTaskCard(this.cwd, parentTaskId, globalStoragePath)
+
+			if (!parentTaskCard) {
+				console.log(`Parent task card ${parentTaskId} not found in getParentSteps`)
+				return null
+			}
+
+			// Create a copy of the steps array
+			const updatedSteps = [...(parentTaskCard.steps || [])]
+
+			// Find the step to update
+			const stepIndex = updatedSteps.findIndex((step) => step.step_number === stepNumber)
+
+			if (stepIndex === -1) {
+				console.log(`Step ${stepNumber} not found in parent task ${parentTaskId} - adding it now`)
+				// Add the step if it doesn't exist
+				const { TaskStepStatus } = await import("../../shared/task-cards")
+
+				// Create a new step
+				updatedSteps.push({
+					step_number: stepNumber,
+					description: `Step ${stepNumber}`,
+					status: TaskStepStatus.COMPLETED, // Set as completed since we're finishing a subtask
+					subtask_id: null, // The subtask is complete, no need to set ID
+					comments: [],
+				})
+
+				return updatedSteps
+			}
+
+			// Update the step status to completed
+			updatedSteps[stepIndex] = {
+				...updatedSteps[stepIndex],
+				status: TaskStepStatus.COMPLETED,
+			}
+
+			return updatedSteps
+		} catch (error) {
+			console.error(`Error getting parent steps: ${error.message}`)
+			return null
+		}
 	}
 
 	/*
@@ -689,7 +851,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 		content security policy of your webview to only allow scripts that have a specific nonce
 		create a content security policy meta tag so that only loading scripts with a nonce is allowed
 		As your extension grows you will likely want to add custom styles, fonts, and/or images to your webview. If you do, you will need to update the content security policy meta tag to explicity allow for these resources. E.g.
-				<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; font-src ${webview.cspSource}; img-src ${webview.cspSource} https:; script-src 'nonce-${nonce}';">
+				<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; font-src ${webview.cspSource}; img-src ${webview.cspSource} https:; script-src 'nonce-${nonce}' https://us-assets.i.posthog.com; connect-src https://openrouter.ai https://us.i.posthog.com https://us-assets.i.posthog.com;">
 		- 'unsafe-inline' is required for styles due to vscode-webview-toolkit's dynamic style injection
 		- since we pass base64 images to the webview, we need to specify img-src ${webview.cspSource} data:;
 
@@ -1141,6 +1303,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			alwaysAllowMcp,
 			alwaysAllowModeSwitch,
 			alwaysAllowSubtasks,
+			alwaysAllowTaskCards,
 			soundEnabled,
 			ttsEnabled,
 			ttsSpeed,
@@ -1200,6 +1363,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			alwaysAllowMcp: alwaysAllowMcp ?? false,
 			alwaysAllowModeSwitch: alwaysAllowModeSwitch ?? false,
 			alwaysAllowSubtasks: alwaysAllowSubtasks ?? false,
+			alwaysAllowTaskCards: alwaysAllowTaskCards ?? false,
 			uriScheme: vscode.env.uriScheme,
 			currentTaskItem: this.getCurrentCline()?.taskId
 				? (taskHistory || []).find((item: HistoryItem) => item.id === this.getCurrentCline()?.taskId)
@@ -1295,6 +1459,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			alwaysAllowMcp: stateValues.alwaysAllowMcp ?? false,
 			alwaysAllowModeSwitch: stateValues.alwaysAllowModeSwitch ?? false,
 			alwaysAllowSubtasks: stateValues.alwaysAllowSubtasks ?? false,
+			alwaysAllowTaskCards: stateValues.alwaysAllowTaskCards ?? false,
 			taskHistory: stateValues.taskHistory,
 			allowedCommands: stateValues.allowedCommands,
 			soundEnabled: stateValues.soundEnabled ?? false,

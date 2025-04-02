@@ -3,5 +3,13 @@
 		"thousand_suffix": "k",
 		"million_suffix": "m",
 		"billion_suffix": "b"
-	}
+	},
+	"loading": "Loading...",
+	"edit": "Edit",
+	"save": "Save",
+	"cancel": "Cancel",
+	"close": "Close",
+	"add": "Add",
+	"delete": "Delete",
+	"error": "Error"
 }

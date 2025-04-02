@@ -69,6 +69,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 		alwaysAllowSubtasks,
 		customModes,
 		telemetrySetting,
+		alwaysAllowTaskCards,
 	} = useExtensionState()
 
 	//const task = messages.length > 0 ? (messages[0].say === "task" ? messages[0] : undefined) : undefined) : undefined
@@ -162,6 +163,11 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 								case "finishTask":
 									setPrimaryButtonText(t("chat:completeSubtaskAndReturn"))
 									setSecondaryButtonText(undefined)
+									break
+								case "updateTaskCard":
+								case "getTaskCard":
+									setPrimaryButtonText(t("chat:approve.title"))
+									setSecondaryButtonText(t("chat:reject.title"))
 									break
 								default:
 									setPrimaryButtonText(t("chat:approve.title"))
@@ -693,6 +699,10 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 					return alwaysAllowSubtasks
 				}
 
+				if (["updateTaskCard", "getTaskCard"].includes(tool?.tool)) {
+					return alwaysAllowTaskCards
+				}
+
 				const isOutsideWorkspace = !!tool.isOutsideWorkspace
 
 				if (isReadOnlyToolAction(message)) {
@@ -721,6 +731,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 			isMcpToolAlwaysAllowed,
 			alwaysAllowModeSwitch,
 			alwaysAllowSubtasks,
+			alwaysAllowTaskCards,
 		],
 	)
 

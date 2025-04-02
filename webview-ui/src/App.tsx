@@ -15,6 +15,7 @@ import WelcomeView from "./components/welcome/WelcomeView"
 import McpView from "./components/mcp/McpView"
 import PromptsView from "./components/prompts/PromptsView"
 import { HumanRelayDialog } from "./components/human-relay/HumanRelayDialog"
+import { TaskCardDialog } from "./components/ui/TaskCardDialog"
 
 type Tab = "settings" | "history" | "mcp" | "prompts" | "chat"
 
@@ -43,6 +44,14 @@ const App = () => {
 		promptText: "",
 	})
 
+	const [taskCardDialogState, setTaskCardDialogState] = useState<{
+		isOpen: boolean
+		taskId: string | undefined
+	}>({
+		isOpen: false,
+		taskId: undefined,
+	})
+
 	const settingsRef = useRef<SettingsViewRef>(null)
 
 	const switchTab = useCallback((newTab: Tab) => {
@@ -68,6 +77,16 @@ const App = () => {
 			if (message.type === "showHumanRelayDialog" && message.requestId && message.promptText) {
 				const { requestId, promptText } = message
 				setHumanRelayDialogState({ isOpen: true, requestId, promptText })
+			}
+
+			// Handle opening task card dialog
+			if (message.type === "success" && message.text === "Opening task card" && message.taskId) {
+				setTaskCardDialogState({ isOpen: true, taskId: message.taskId })
+			}
+
+			// Handle closing task card dialog
+			if (message.type === "success" && message.text === "Closing task card") {
+				setTaskCardDialogState({ isOpen: false, taskId: undefined })
 			}
 		},
 		[switchTab],
@@ -118,6 +137,11 @@ const App = () => {
 				onClose={() => setHumanRelayDialogState((prev) => ({ ...prev, isOpen: false }))}
 				onSubmit={(requestId, text) => vscode.postMessage({ type: "humanRelayResponse", requestId, text })}
 				onCancel={(requestId) => vscode.postMessage({ type: "humanRelayCancel", requestId })}
+			/>
+			<TaskCardDialog
+				isOpen={taskCardDialogState.isOpen}
+				taskId={taskCardDialogState.taskId}
+				onOpenChange={(open) => setTaskCardDialogState((prev) => ({ ...prev, isOpen: open }))}
 			/>
 		</>
 	)

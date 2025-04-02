@@ -23,6 +23,7 @@ type AutoApproveSettingsProps = HTMLAttributes<HTMLDivElement> & {
 	alwaysAllowModeSwitch?: boolean
 	alwaysAllowSubtasks?: boolean
 	alwaysAllowExecute?: boolean
+	alwaysAllowTaskCards?: boolean
 	allowedCommands?: string[]
 	setCachedStateField: SetCachedStateField<
 		| "alwaysAllowReadOnly"
@@ -37,6 +38,7 @@ type AutoApproveSettingsProps = HTMLAttributes<HTMLDivElement> & {
 		| "alwaysAllowModeSwitch"
 		| "alwaysAllowSubtasks"
 		| "alwaysAllowExecute"
+		| "alwaysAllowTaskCards"
 		| "allowedCommands"
 	>
 }
@@ -54,6 +56,7 @@ export const AutoApproveSettings = ({
 	alwaysAllowModeSwitch,
 	alwaysAllowSubtasks,
 	alwaysAllowExecute,
+	alwaysAllowTaskCards,
 	allowedCommands,
 	setCachedStateField,
 	className,
@@ -253,6 +256,18 @@ export const AutoApproveSettings = ({
 					</VSCodeCheckbox>
 					<div className="text-vscode-descriptionForeground text-sm mt-1">
 						{t("settings:autoApprove.execute.description")}
+					</div>
+				</div>
+
+				<div>
+					<VSCodeCheckbox
+						checked={alwaysAllowTaskCards}
+						onChange={(e: any) => setCachedStateField("alwaysAllowTaskCards", e.target.checked)}
+						data-testid="always-allow-task-cards-checkbox">
+						<span className="font-medium">{t("settings:autoApprove.taskCards.label")}</span>
+					</VSCodeCheckbox>
+					<div className="text-vscode-descriptionForeground text-sm mt-1">
+						{t("settings:autoApprove.taskCards.description")}
 					</div>
 				</div>
 

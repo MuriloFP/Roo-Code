@@ -1,0 +1,23 @@
+{
+	"not_found": "Không tìm thấy thẻ công việc",
+	"edit_title": "Chỉnh sửa thẻ công việc",
+	"status": "Trạng thái",
+	"last_updated": "Cập nhật lần cuối",
+	"title": "Tiêu đề",
+	"description": "Mô tả",
+	"steps": "Các bước",
+	"no_steps": "Chưa có bước nào được thêm vào",
+	"new_step": "Thêm bước mới...",
+	"status_planned": "Kế hoạch",
+	"status_in_progress": "Đang tiến hành",
+	"status_completed": "Hoàn thành",
+	"context": "Bối cảnh",
+	"no_context": "Chưa có thông tin bối cảnh nào được thêm vào",
+	"new_context": "Thêm thông tin bối cảnh...",
+	"notes": "Ghi chú",
+	"no_notes": "Chưa có ghi chú nào được thêm vào",
+	"new_note": "Thêm ghi chú...",
+	"no_comments": "Không có bình luận",
+	"new_comment": "Bình luận mới",
+	"parent_task": "Nhiệm vụ chính"
+}

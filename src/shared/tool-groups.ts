@@ -23,6 +23,8 @@ export const TOOL_DISPLAY_NAMES = {
 	attempt_completion: "complete tasks",
 	switch_mode: "switch modes",
 	new_task: "create new task",
+	update_task_card: "update task card",
+	get_task_card: "get task card",
 } as const
 
 export type { ToolGroup }
@@ -48,6 +50,9 @@ export const TOOL_GROUPS: Record<ToolGroup, ToolGroupConfig> = {
 		tools: ["switch_mode", "new_task"],
 		alwaysAvailable: true,
 	},
+	task_cards: {
+		tools: ["update_task_card", "get_task_card"],
+	},
 }
 
 // Tools that are always available to all modes
@@ -56,6 +61,7 @@ export const ALWAYS_AVAILABLE_TOOLS = [
 	"attempt_completion",
 	"switch_mode",
 	"new_task",
+	// Note: task_cards tools (update_task_card, get_task_card) are controlled by the TASK_CARDS experiment flag
 ] as const
 
 // Tool name types for type safety

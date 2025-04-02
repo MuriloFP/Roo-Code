@@ -1,0 +1,23 @@
+{
+	"not_found": "Task card not found",
+	"edit_title": "Edit Task Card",
+	"status": "Status",
+	"last_updated": "Last updated",
+	"title": "Title",
+	"description": "Description",
+	"steps": "Steps",
+	"no_steps": "No steps have been added yet",
+	"new_step": "Add a new step...",
+	"status_planned": "Planned",
+	"status_in_progress": "In Progress",
+	"status_completed": "Completed",
+	"context": "Context",
+	"no_context": "No context information has been added yet",
+	"new_context": "Add context information...",
+	"notes": "Notes",
+	"no_notes": "No notes have been added yet",
+	"new_note": "Add a note...",
+	"no_comments": "No comments",
+	"new_comment": "New Comment",
+	"parent_task": "Parent Task"
+}

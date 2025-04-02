@@ -1,0 +1,23 @@
+{
+	"not_found": "Nie znaleziono karty zadania",
+	"edit_title": "Edytuj kartę zadania",
+	"status": "Status",
+	"last_updated": "Ostatnia aktualizacja",
+	"title": "Tytuł",
+	"description": "Opis",
+	"steps": "Kroki",
+	"no_steps": "Nie dodano jeszcze żadnych kroków",
+	"new_step": "Dodaj nowy krok...",
+	"status_planned": "Zaplanowane",
+	"status_in_progress": "W trakcie",
+	"status_completed": "Zakończone",
+	"context": "Kontekst",
+	"no_context": "Nie dodano jeszcze żadnych informacji kontekstowych",
+	"new_context": "Dodaj informacje kontekstowe...",
+	"notes": "Notatki",
+	"no_notes": "Nie dodano jeszcze żadnych notatek",
+	"new_note": "Dodaj notatkę...",
+	"no_comments": "Brak komentarzy",
+	"new_comment": "Nowy komentarz",
+	"parent_task": "Zadanie nadrzędne"
+}

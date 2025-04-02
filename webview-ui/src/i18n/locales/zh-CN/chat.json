@@ -10,7 +10,8 @@
 		"contextWindow": "上下文窗口:",
 		"closeAndStart": "关闭任务并开始新任务",
 		"export": "导出任务历史",
-		"delete": "删除任务（Shift + 点击跳过确认）"
+		"delete": "删除任务（Shift + 点击跳过确认）",
+		"taskCard": "打开任务卡片"
 	},
 	"unpin": "取消置顶",
 	"pin": "置顶",

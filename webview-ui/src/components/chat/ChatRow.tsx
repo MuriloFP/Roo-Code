@@ -470,6 +470,42 @@ export const ChatRowContent = ({
 						/>
 					</>
 				)
+			case "updateTaskCard":
+				return (
+					<>
+						<div style={headerStyle}>
+							{toolIcon("note")}
+							<span style={{ fontWeight: "bold" }}>
+								{message.type === "ask"
+									? t("chat:taskCards.wantsToUpdate")
+									: t("chat:taskCards.didUpdate")}
+							</span>
+						</div>
+						<CodeAccordian
+							code={tool.taskCardData!}
+							language="json"
+							isExpanded={isExpanded}
+							onToggleExpand={onToggleExpand}
+						/>
+					</>
+				)
+			case "getTaskCard":
+				return (
+					<>
+						<div style={headerStyle}>
+							{toolIcon("note")}
+							<span style={{ fontWeight: "bold" }}>
+								{message.type === "ask" ? t("chat:taskCards.wantsToGet") : t("chat:taskCards.didGet")}
+							</span>
+						</div>
+						<CodeAccordian
+							code={tool.content!}
+							language="json"
+							isExpanded={isExpanded}
+							onToggleExpand={onToggleExpand}
+						/>
+					</>
+				)
 			case "switchMode":
 				return (
 					<>

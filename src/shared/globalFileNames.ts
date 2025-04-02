@@ -7,4 +7,5 @@ export const GlobalFileNames = {
 	mcpSettings: "mcp_settings.json",
 	unboundModels: "unbound_models.json",
 	customModes: "custom_modes.json",
+	taskCard: "task_card.json",
 }

@@ -1,0 +1,23 @@
+{
+	"not_found": "Tarjeta de tarea no encontrada",
+	"edit_title": "Editar tarjeta de tarea",
+	"status": "Estado",
+	"last_updated": "Última actualización",
+	"title": "Título",
+	"description": "Descripción",
+	"steps": "Pasos",
+	"no_steps": "Aún no se han añadido pasos",
+	"new_step": "Añadir un nuevo paso...",
+	"status_planned": "Planificado",
+	"status_in_progress": "En progreso",
+	"status_completed": "Completado",
+	"context": "Contexto",
+	"no_context": "Aún no se ha añadido información de contexto",
+	"new_context": "Añadir información de contexto...",
+	"notes": "Notas",
+	"no_notes": "Aún no se han añadido notas",
+	"new_note": "Añadir una nota...",
+	"no_comments": "Sin comentarios",
+	"new_comment": "Nuevo comentario",
+	"parent_task": "Tarea padre"
+}

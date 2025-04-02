@@ -1,0 +1,23 @@
+{
+	"not_found": "Cartão de tarefa não encontrado",
+	"edit_title": "Editar cartão de tarefa",
+	"status": "Status",
+	"last_updated": "Última atualização",
+	"title": "Título",
+	"description": "Descrição",
+	"steps": "Passos",
+	"no_steps": "Nenhum passo foi adicionado ainda",
+	"new_step": "Adicionar um novo passo...",
+	"status_planned": "Planejado",
+	"status_in_progress": "Em andamento",
+	"status_completed": "Concluído",
+	"context": "Contexto",
+	"no_context": "Nenhuma informação de contexto foi adicionada ainda",
+	"new_context": "Adicionar informação de contexto...",
+	"notes": "Notas",
+	"no_notes": "Nenhuma nota foi adicionada ainda",
+	"new_note": "Adicionar uma nota...",
+	"no_comments": "Sem comentários",
+	"new_comment": "Novo comentário",
+	"parent_task": "Tarefa principal"
+}

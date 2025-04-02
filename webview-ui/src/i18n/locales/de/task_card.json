@@ -1,0 +1,23 @@
+{
+	"not_found": "Aufgabenkarte nicht gefunden",
+	"edit_title": "Aufgabenkarte bearbeiten",
+	"status": "Status",
+	"last_updated": "Zuletzt aktualisiert",
+	"title": "Titel",
+	"description": "Beschreibung",
+	"steps": "Schritte",
+	"no_steps": "Es wurden noch keine Schritte hinzugefügt",
+	"new_step": "Neuen Schritt hinzufügen...",
+	"status_planned": "Geplant",
+	"status_in_progress": "In Bearbeitung",
+	"status_completed": "Abgeschlossen",
+	"context": "Kontext",
+	"no_context": "Es wurden noch keine Kontextinformationen hinzugefügt",
+	"new_context": "Kontextinformationen hinzufügen...",
+	"notes": "Notizen",
+	"no_notes": "Es wurden noch keine Notizen hinzugefügt",
+	"new_note": "Notiz hinzufügen...",
+	"no_comments": "Keine Kommentare",
+	"new_comment": "Neuer Kommentar",
+	"parent_task": "Übergeordnete Aufgabe"
+}

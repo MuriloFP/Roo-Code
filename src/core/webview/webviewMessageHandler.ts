@@ -12,7 +12,7 @@ import { GlobalFileNames } from "../../shared/globalFileNames"
 
 import { checkoutDiffPayloadSchema, checkoutRestorePayloadSchema, WebviewMessage } from "../../shared/WebviewMessage"
 import { checkExistKey } from "../../shared/checkExistApiConfig"
-import { EXPERIMENT_IDS, experiments as Experiments, experimentDefault, ExperimentId } from "../../shared/experiments"
+import { EXPERIMENT_IDS, experiments as Experiments, experimentDefault } from "../../shared/experiments"
 import { Terminal } from "../../integrations/terminal/Terminal"
 import { openFile, openImage } from "../../integrations/misc/open-file"
 import { selectImages } from "../../integrations/misc/process-images"
@@ -41,6 +41,7 @@ import { Mode, PromptComponent, defaultModeSlug, getModeBySlug, getGroupName } f
 import { getDiffStrategy } from "../diff/DiffStrategy"
 import { SYSTEM_PROMPT } from "../prompts/system"
 import { buildApiHandler } from "../../api"
+import { getTaskCard, updateTaskCard } from "../prompts/tools/task-cards/storage"
 
 export const webviewMessageHandler = async (provider: ClineProvider, message: WebviewMessage) => {
 	switch (message.type) {
@@ -293,6 +294,10 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			break
 		case "alwaysAllowSubtasks":
 			await provider.updateGlobalState("alwaysAllowSubtasks", message.bool)
+			await provider.postStateToWebview()
+			break
+		case "alwaysAllowTaskCards":
+			await provider.updateGlobalState("alwaysAllowTaskCards", message.bool)
 			await provider.postStateToWebview()
 			break
 		case "askResponse":
@@ -1335,6 +1340,156 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			const isOptedIn = telemetrySetting === "enabled"
 			telemetryService.updateTelemetryState(isOptedIn)
 			await provider.postStateToWebview()
+			break
+		}
+		case "getTaskCardData": {
+			const taskId = message.taskId
+			if (!taskId) {
+				provider.log(`[webviewMessageHandler] Missing taskId in getTaskCardData message`)
+				await provider.postMessageToWebview({
+					type: "error",
+					text: "Missing taskId in getTaskCardData message",
+				})
+				return
+			}
+
+			const state = await provider.getState()
+
+			if (!Experiments.isEnabled(state.experiments, EXPERIMENT_IDS.TASK_CARDS)) {
+				provider.log(`[webviewMessageHandler] Task cards feature is not enabled`)
+				await provider.postMessageToWebview({
+					type: "error",
+					text: "Task cards feature is not enabled",
+				})
+				return
+			}
+
+			try {
+				const cwd = provider.cwd || ""
+				const globalStoragePath = provider.context.globalStorageUri.fsPath
+				const taskCard = await getTaskCard(cwd, taskId, globalStoragePath)
+				provider.log(`[webviewMessageHandler] Retrieved task card data for task ${taskId}`)
+				await provider.postMessageToWebview({
+					type: "taskCardData",
+					taskId: taskId,
+					text: JSON.stringify(taskCard),
+				})
+			} catch (error) {
+				provider.log(`[webviewMessageHandler] Error retrieving task card: ${error}`)
+				await provider.postMessageToWebview({
+					type: "error",
+					taskId: taskId,
+					text: `Error retrieving task card: ${error}`,
+				})
+			}
+			break
+		}
+		case "updateTaskCard": {
+			const taskId = message.taskId
+			const data = message.data
+
+			if (!taskId) {
+				provider.log(`[webviewMessageHandler] Missing taskId in updateTaskCard message`)
+				await provider.postMessageToWebview({
+					type: "error",
+					text: "Missing taskId in updateTaskCard message",
+				})
+				return
+			}
+
+			if (!data) {
+				provider.log(`[webviewMessageHandler] Missing data in updateTaskCard message`)
+				await provider.postMessageToWebview({
+					type: "error",
+					text: "Missing data in updateTaskCard message",
+				})
+				return
+			}
+
+			const state = await provider.getState()
+
+			if (!Experiments.isEnabled(state.experiments, EXPERIMENT_IDS.TASK_CARDS)) {
+				provider.log(`[webviewMessageHandler] Task cards feature is not enabled`)
+				await provider.postMessageToWebview({
+					type: "error",
+					text: "Task cards feature is not enabled",
+				})
+				return
+			}
+
+			try {
+				const cwd = provider.cwd || ""
+				const globalStoragePath = provider.context.globalStorageUri.fsPath
+				await updateTaskCard(cwd, globalStoragePath, taskId, data)
+				provider.log(`[webviewMessageHandler] Updated task card for task ${taskId}`)
+				await provider.postMessageToWebview({
+					type: "success",
+					text: "Task card updated successfully",
+				})
+			} catch (error) {
+				provider.log(`[webviewMessageHandler] Error updating task card: ${error}`)
+				await provider.postMessageToWebview({
+					type: "error",
+					text: `Error updating task card: ${error}`,
+				})
+			}
+			break
+		}
+		case "openTaskCard": {
+			const taskId = message.taskId
+
+			if (!taskId) {
+				provider.log(`[webviewMessageHandler] Missing taskId in openTaskCard message`)
+				await provider.postMessageToWebview({
+					type: "error",
+					text: "Missing taskId in openTaskCard message",
+				})
+				return
+			}
+
+			const state = await provider.getState()
+
+			if (!Experiments.isEnabled(state.experiments, EXPERIMENT_IDS.TASK_CARDS)) {
+				provider.log(`[webviewMessageHandler] Task cards feature is not enabled`)
+				await provider.postMessageToWebview({
+					type: "error",
+					text: "Task cards feature is not enabled",
+				})
+				return
+			}
+
+			try {
+				// Logic to open the task card in the UI will be handled by the webview
+				provider.log(`[webviewMessageHandler] Request to open task card for task ${taskId}`)
+				await provider.postMessageToWebview({
+					type: "success",
+					text: "Opening task card",
+					taskId: taskId,
+				})
+			} catch (error) {
+				provider.log(`[webviewMessageHandler] Error opening task card: ${error}`)
+				await provider.postMessageToWebview({
+					type: "error",
+					text: `Error opening task card: ${error}`,
+				})
+			}
+			break
+		}
+		case "closeTaskCard": {
+			try {
+				// Logic to close the task card in the UI will be handled by the webview
+				provider.log(`[webviewMessageHandler] Request to close task card`)
+				await provider.postMessageToWebview({
+					type: "success",
+					text: "Closing task card",
+				})
+			} catch (error) {
+				provider.log(`[webviewMessageHandler] Error closing task card: ${error}`)
+				await provider.postMessageToWebview({
+					type: "error",
+					text: `Error closing task card: ${error}`,
+				})
+			}
 			break
 		}
 	}

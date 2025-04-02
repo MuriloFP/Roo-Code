@@ -10,7 +10,8 @@
 		"contextWindow": "Finestra di contesto:",
 		"closeAndStart": "Chiudi attività e iniziane una nuova",
 		"export": "Esporta cronologia attività",
-		"delete": "Elimina attività (Shift + Clic per saltare la conferma)"
+		"delete": "Elimina attività (Shift + Clic per saltare la conferma)",
+		"taskCard": "Apri scheda attività"
 	},
 	"unpin": "Rilascia",
 	"pin": "Fissa",

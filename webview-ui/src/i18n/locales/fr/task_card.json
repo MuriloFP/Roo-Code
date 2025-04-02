@@ -1,0 +1,23 @@
+{
+	"not_found": "Carte de tâche introuvable",
+	"edit_title": "Modifier la carte de tâche",
+	"status": "Statut",
+	"last_updated": "Dernière mise à jour",
+	"title": "Titre",
+	"description": "Description",
+	"steps": "Étapes",
+	"no_steps": "Aucune étape n'a encore été ajoutée",
+	"new_step": "Ajouter une nouvelle étape...",
+	"status_planned": "Planifiée",
+	"status_in_progress": "En cours",
+	"status_completed": "Terminée",
+	"context": "Contexte",
+	"no_context": "Aucune information de contexte n'a encore été ajoutée",
+	"new_context": "Ajouter des informations de contexte...",
+	"notes": "Notes",
+	"no_notes": "Aucune note n'a encore été ajoutée",
+	"new_note": "Ajouter une note...",
+	"no_comments": "Pas de commentaires",
+	"new_comment": "Nouveau commentaire",
+	"parent_task": "Tâche parente"
+}

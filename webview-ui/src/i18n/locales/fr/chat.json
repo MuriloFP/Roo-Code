@@ -10,7 +10,8 @@
 		"contextWindow": "Fenêtre de contexte :",
 		"closeAndStart": "Fermer la tâche et en commencer une nouvelle",
 		"export": "Exporter l'historique des tâches",
-		"delete": "Supprimer la tâche (Shift + Clic pour ignorer la confirmation)"
+		"delete": "Supprimer la tâche (Shift + Clic pour ignorer la confirmation)",
+		"taskCard": "Ouvrir la carte de tâche"
 	},
 	"unpin": "Désépingler",
 	"pin": "Épingler",

@@ -1,0 +1,23 @@
+{
+	"not_found": "未找到任务卡",
+	"edit_title": "编辑任务卡",
+	"status": "状态",
+	"last_updated": "最后更新",
+	"title": "标题",
+	"description": "描述",
+	"steps": "步骤",
+	"no_steps": "尚未添加任何步骤",
+	"new_step": "添加新步骤...",
+	"status_planned": "计划中",
+	"status_in_progress": "进行中",
+	"status_completed": "已完成",
+	"context": "上下文",
+	"no_context": "尚未添加任何上下文信息",
+	"new_context": "添加上下文信息...",
+	"notes": "笔记",
+	"no_notes": "尚未添加任何笔记",
+	"new_note": "添加笔记...",
+	"no_comments": "没有评论",
+	"new_comment": "新评论",
+	"parent_task": "父任务"
+}

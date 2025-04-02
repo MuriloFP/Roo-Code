@@ -1,16 +1,17 @@
 {
-	"greeting": "Roo能為您做什麼？",
+	"greeting": "Roo能為您做些什麼？",
 	"task": {
 		"title": "任務",
 		"seeMore": "查看更多",
-		"seeLess": "查看更少",
-		"tokens": "Tokens:",
-		"cache": "快取:",
-		"apiCost": "API成本:",
-		"contextWindow": "上下文視窗:",
+		"seeLess": "收起",
+		"tokens": "令牌：",
+		"cache": "快取：",
+		"apiCost": "API成本：",
+		"contextWindow": "上下文視窗：",
 		"closeAndStart": "關閉任務並開始新任務",
 		"export": "匯出任務歷史",
-		"delete": "刪除任務（Shift + 點擊跳過確認）"
+		"delete": "刪除任務（Shift + 點擊跳過確認）",
+		"taskCard": "開啟任務卡片"
 	},
 	"unpin": "取消置頂",
 	"pin": "置頂",

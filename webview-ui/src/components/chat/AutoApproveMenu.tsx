@@ -35,6 +35,8 @@ const AutoApproveMenu = ({ style }: AutoApproveMenuProps) => {
 		setAlwaysAllowModeSwitch,
 		alwaysAllowSubtasks,
 		setAlwaysAllowSubtasks,
+		alwaysAllowTaskCards,
+		setAlwaysAllowTaskCards,
 		alwaysApproveResubmit,
 		setAlwaysApproveResubmit,
 		autoApprovalEnabled,
@@ -92,6 +94,13 @@ const AutoApproveMenu = ({ style }: AutoApproveMenuProps) => {
 			shortName: t("chat:autoApprove.actions.subtasks.shortName"),
 			enabled: alwaysAllowSubtasks ?? false,
 			description: t("chat:autoApprove.actions.subtasks.description"),
+		},
+		{
+			id: "taskCards",
+			label: t("chat:autoApprove.actions.taskCards.label"),
+			shortName: t("chat:autoApprove.actions.taskCards.shortName"),
+			enabled: alwaysAllowTaskCards ?? false,
+			description: t("chat:autoApprove.actions.taskCards.description"),
 		},
 		{
 			id: "retryRequests",
@@ -154,6 +163,12 @@ const AutoApproveMenu = ({ style }: AutoApproveMenuProps) => {
 		vscode.postMessage({ type: "alwaysAllowSubtasks", bool: newValue })
 	}, [alwaysAllowSubtasks, setAlwaysAllowSubtasks])
 
+	const handleTaskCardsChange = useCallback(() => {
+		const newValue = !(alwaysAllowTaskCards ?? false)
+		setAlwaysAllowTaskCards(newValue)
+		vscode.postMessage({ type: "alwaysAllowTaskCards", bool: newValue })
+	}, [alwaysAllowTaskCards, setAlwaysAllowTaskCards])
+
 	const handleRetryChange = useCallback(() => {
 		const newValue = !(alwaysApproveResubmit ?? false)
 		setAlwaysApproveResubmit(newValue)
@@ -173,6 +188,7 @@ const AutoApproveMenu = ({ style }: AutoApproveMenuProps) => {
 		useMcp: handleMcpChange,
 		switchModes: handleModeSwitchChange,
 		subtasks: handleSubtasksChange,
+		taskCards: handleTaskCardsChange,
 		retryRequests: handleRetryChange,
 	}
 

@@ -80,6 +80,7 @@ import { askFollowupQuestionTool } from "./tools/askFollowupQuestionTool"
 import { switchModeTool } from "./tools/switchModeTool"
 import { attemptCompletionTool } from "./tools/attemptCompletionTool"
 import { newTaskTool } from "./tools/newTaskTool"
+import { updateTaskCardToolHandler, getTaskCardToolHandler } from "./tools/taskCardTool"
 
 export type ToolResponse = string | Array<Anthropic.TextBlockParam | Anthropic.ImageBlockParam>
 type UserContent = Array<Anthropic.Messages.ContentBlockParam>
@@ -121,6 +122,7 @@ export class Cline extends EventEmitter<ClineEvents> {
 
 	readonly rootTask: Cline | undefined = undefined
 	readonly parentTask: Cline | undefined = undefined
+	readonly parentTaskId: string | undefined = undefined
 	readonly taskNumber: number
 	isPaused: boolean = false
 	pausedModeSlug: string = defaultModeSlug
@@ -219,6 +221,7 @@ export class Cline extends EventEmitter<ClineEvents> {
 
 		this.rootTask = rootTask
 		this.parentTask = parentTask
+		this.parentTaskId = parentTask?.taskId
 		this.taskNumber = taskNumber ?? -1
 
 		if (historyItem) {
@@ -1407,6 +1410,8 @@ export class Cline extends EventEmitter<ClineEvents> {
 							const modeName = getModeBySlug(mode, customModes)?.name ?? mode
 							return `[${block.name} in ${modeName} mode: '${message}']`
 						}
+						default:
+							return `[${block.name}]`
 					}
 				}
 
@@ -1651,6 +1656,26 @@ export class Cline extends EventEmitter<ClineEvents> {
 							removeClosingTag,
 							toolDescription,
 							askFinishSubTaskApproval,
+						)
+						break
+					case "update_task_card":
+						await updateTaskCardToolHandler(
+							this,
+							block,
+							askApproval,
+							handleError,
+							pushToolResult,
+							removeClosingTag,
+						)
+						break
+					case "get_task_card":
+						await getTaskCardToolHandler(
+							this,
+							block,
+							askApproval,
+							handleError,
+							pushToolResult,
+							removeClosingTag,
 						)
 						break
 				}

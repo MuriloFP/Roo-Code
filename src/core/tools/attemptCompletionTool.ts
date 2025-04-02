@@ -13,6 +13,7 @@ import {
 import { formatResponse } from "../prompts/responses"
 import { telemetryService } from "../../services/telemetry/TelemetryService"
 import Anthropic from "@anthropic-ai/sdk"
+import { EXPERIMENT_IDS } from "../../shared/experiments"
 
 export async function attemptCompletionTool(
 	cline: Cline,
@@ -66,9 +67,54 @@ export async function attemptCompletionTool(
 			if (command) {
 				if (lastMessage && lastMessage.ask !== "command") {
 					// Haven't sent a command message yet so first send completion_result then command.
-					await cline.say("completion_result", result, undefined, false)
-					telemetryService.captureTaskCompleted(cline.taskId)
-					cline.emit("taskCompleted", cline.taskId, cline.getTokenUsage())
+
+					// Get the provider
+					const provider = cline.providerRef.deref()
+					if (provider) {
+						// For subtasks, we'll skip adding the task card summary here as it will be handled in finishSubTask
+						if (cline.parentTask || cline.parentTaskId) {
+							await cline.say("completion_result", result, undefined, false)
+						} else {
+							// Only add task card summary for top-level tasks
+							try {
+								const { experiments } = await provider.getState()
+								const taskCardsEnabled = experiments?.[EXPERIMENT_IDS.TASK_CARDS] === true
+
+								if (taskCardsEnabled && cline.taskId) {
+									// Import the function dynamically to avoid circular dependencies
+									const { getTaskCardForCompletion } = await import(
+										"../prompts/tools/task-cards/storage"
+									)
+
+									// Get the global storage path
+									const globalStoragePath = provider.context.globalStorageUri.fsPath
+
+									// Get task card completion summary
+									const taskCardSummary = await getTaskCardForCompletion(
+										provider.cwd,
+										cline.taskId,
+										globalStoragePath,
+									)
+
+									// Append task card information to the result
+									if (taskCardSummary) {
+										const resultWithTaskCard = `${result}\n\n${taskCardSummary}`
+										await cline.say("completion_result", resultWithTaskCard, undefined, false)
+									} else {
+										await cline.say("completion_result", result, undefined, false)
+									}
+								} else {
+									await cline.say("completion_result", result, undefined, false)
+								}
+							} catch (error) {
+								console.error(`Error getting task card summary: ${error.message}`)
+								await cline.say("completion_result", result, undefined, false)
+							}
+						}
+
+						telemetryService.captureTaskCompleted(cline.taskId)
+						cline.emit("taskCompleted", cline.taskId, cline.getTokenUsage())
+					}
 				}
 
 				// Complete command message.
@@ -89,17 +135,63 @@ export async function attemptCompletionTool(
 				// User didn't reject, but the command may have output.
 				commandResult = execCommandResult
 			} else {
-				await cline.say("completion_result", result, undefined, false)
-				telemetryService.captureTaskCompleted(cline.taskId)
-				cline.emit("taskCompleted", cline.taskId, cline.getTokenUsage())
+				// Get the provider
+				const provider = cline.providerRef.deref()
+				if (provider) {
+					// For subtasks, we'll skip adding the task card summary here as it will be handled in finishSubTask
+					if (cline.parentTask || cline.parentTaskId) {
+						await cline.say("completion_result", result, undefined, false)
+					} else {
+						// Only add task card summary for top-level tasks
+						try {
+							const { experiments } = await provider.getState()
+							const taskCardsEnabled = experiments?.[EXPERIMENT_IDS.TASK_CARDS] === true
+
+							if (taskCardsEnabled && cline.taskId) {
+								// Import the function dynamically to avoid circular dependencies
+								const { getTaskCardForCompletion } = await import("../prompts/tools/task-cards/storage")
+
+								// Get the global storage path
+								const globalStoragePath = provider.context.globalStorageUri.fsPath
+
+								// Get task card completion summary
+								const taskCardSummary = await getTaskCardForCompletion(
+									provider.cwd,
+									cline.taskId,
+									globalStoragePath,
+								)
+
+								// Append task card information to the result
+								if (taskCardSummary) {
+									const resultWithTaskCard = `${result}\n\n${taskCardSummary}`
+									await cline.say("completion_result", resultWithTaskCard, undefined, false)
+								} else {
+									await cline.say("completion_result", result, undefined, false)
+								}
+							} else {
+								await cline.say("completion_result", result, undefined, false)
+							}
+						} catch (error) {
+							console.error(`Error getting task card summary: ${error.message}`)
+							await cline.say("completion_result", result, undefined, false)
+						}
+					}
+
+					telemetryService.captureTaskCompleted(cline.taskId)
+					cline.emit("taskCompleted", cline.taskId, cline.getTokenUsage())
+				}
 			}
 
-			if (cline.parentTask) {
+			if (cline.parentTask || cline.parentTaskId) {
 				const didApprove = await askFinishSubTaskApproval()
 
 				if (!didApprove) {
 					return
 				}
+
+				console.log(
+					`Finishing subtask ${cline.taskId} with parent ${cline.parentTaskId || cline.parentTask?.taskId}`,
+				)
 
 				// tell the provider to remove the current subtask and resume the previous task in the stack
 				await cline.providerRef.deref()?.finishSubTask(`Task complete: ${lastMessage?.text}`)

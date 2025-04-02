@@ -30,7 +30,21 @@ import { useAppTranslation } from "../../i18n/TranslationContext"
 import { Trans } from "react-i18next"
 
 // Get all available groups that should show in prompts view
-const availableGroups = (Object.keys(TOOL_GROUPS) as ToolGroup[]).filter((group) => !TOOL_GROUPS[group].alwaysAvailable)
+const getAvailableGroups = (experiments: Record<string, boolean> = {}) => {
+	return (Object.keys(TOOL_GROUPS) as ToolGroup[]).filter((group: ToolGroup) => {
+		// Skip groups that are always available
+		if (TOOL_GROUPS[group].alwaysAvailable) {
+			return false
+		}
+
+		// Only show task_cards group when the experiment is enabled
+		if (group === "task_cards" && !experiments.task_cards) {
+			return false
+		}
+
+		return true
+	})
+}
 
 type ModeSource = "global" | "project"
 
@@ -57,6 +71,7 @@ const PromptsView = ({ onDone }: PromptsViewProps) => {
 		customInstructions,
 		setCustomInstructions,
 		customModes,
+		experiments,
 	} = useExtensionState()
 
 	// Memoize modes to preserve array order
@@ -155,7 +170,7 @@ const PromptsView = ({ onDone }: PromptsViewProps) => {
 	const [newModeSlug, setNewModeSlug] = useState("")
 	const [newModeRoleDefinition, setNewModeRoleDefinition] = useState("")
 	const [newModeCustomInstructions, setNewModeCustomInstructions] = useState("")
-	const [newModeGroups, setNewModeGroups] = useState<GroupEntry[]>(availableGroups)
+	const [newModeGroups, setNewModeGroups] = useState<GroupEntry[]>(getAvailableGroups(experiments))
 	const [newModeSource, setNewModeSource] = useState<ModeSource>("global")
 
 	// Field-specific error states
@@ -169,7 +184,7 @@ const PromptsView = ({ onDone }: PromptsViewProps) => {
 		// Reset form fields
 		setNewModeName("")
 		setNewModeSlug("")
-		setNewModeGroups(availableGroups)
+		setNewModeGroups(getAvailableGroups(experiments))
 		setNewModeRoleDefinition("")
 		setNewModeCustomInstructions("")
 		setNewModeSource("global")
@@ -178,7 +193,7 @@ const PromptsView = ({ onDone }: PromptsViewProps) => {
 		setSlugError("")
 		setRoleDefinitionError("")
 		setGroupsError("")
-	}, [])
+	}, [experiments])
 
 	// Reset form fields when dialog opens
 	useEffect(() => {
@@ -633,7 +648,7 @@ const PromptsView = ({ onDone }: PromptsViewProps) => {
 							)}
 							{isToolsEditMode && findModeBySlug(mode, customModes) ? (
 								<div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
-									{availableGroups.map((group) => {
+									{getAvailableGroups(experiments).map((group) => {
 										const currentMode = getCurrentMode()
 										const isCustomMode = findModeBySlug(mode, customModes)
 										const customMode = isCustomMode
@@ -677,6 +692,14 @@ const PromptsView = ({ onDone }: PromptsViewProps) => {
 										const currentMode = getCurrentMode()
 										const enabledGroups = currentMode?.groups || []
 										return enabledGroups
+											.filter((group) => {
+												const groupName = getGroupName(group)
+												// Filter out task_cards when experiment is disabled
+												if (groupName === "task_cards" && !experiments.task_cards) {
+													return false
+												}
+												return true
+											})
 											.map((group) => {
 												const groupName = getGroupName(group)
 												const displayName = t(`prompts:tools.toolNames.${groupName}`)
@@ -1269,7 +1292,7 @@ const PromptsView = ({ onDone }: PromptsViewProps) => {
 										gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
 										gap: "8px",
 									}}>
-									{availableGroups.map((group) => (
+									{getAvailableGroups(experiments).map((group) => (
 										<VSCodeCheckbox
 											key={group}
 											checked={newModeGroups.some((g) => getGroupName(g) === group)}

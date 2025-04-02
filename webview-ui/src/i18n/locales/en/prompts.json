@@ -24,7 +24,8 @@
 			"edit": "Edit Files",
 			"browser": "Use Browser",
 			"command": "Run Commands",
-			"mcp": "Use MCP"
+			"mcp": "Use MCP",
+			"task_cards": "Task Cards"
 		}
 	},
 	"roleDefinition": {

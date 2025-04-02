@@ -23,6 +23,8 @@ import {
 	getCapabilitiesSection,
 	getModesSection,
 	addCustomInstructions,
+	getTaskCardSection,
+	getTaskCardGuidelinesSection,
 } from "./sections"
 import { loadSystemPromptFile } from "./sections/custom-system-prompt"
 import { formatLanguage } from "../../shared/language"
@@ -43,6 +45,7 @@ async function generatePrompt(
 	enableMcpServerCreation?: boolean,
 	language?: string,
 	rooIgnoreInstructions?: string,
+	taskId?: string,
 ): Promise<string> {
 	if (!context) {
 		throw new Error("Extension context is required for generating system prompt")
@@ -55,11 +58,12 @@ async function generatePrompt(
 	const modeConfig = getModeBySlug(mode, customModeConfigs) || modes.find((m) => m.slug === mode) || modes[0]
 	const roleDefinition = promptComponent?.roleDefinition || modeConfig.roleDefinition
 
-	const [modesSection, mcpServersSection] = await Promise.all([
+	const [modesSection, mcpServersSection, taskCardSection] = await Promise.all([
 		getModesSection(context),
 		modeConfig.groups.some((groupEntry) => getGroupName(groupEntry) === "mcp")
 			? getMcpServersSection(mcpHub, effectiveDiffStrategy, enableMcpServerCreation)
 			: Promise.resolve(""),
+		getTaskCardSection(cwd, taskId || "", experiments),
 	])
 
 	const basePrompt = `${roleDefinition}
@@ -89,7 +93,11 @@ ${getRulesSection(cwd, supportsComputerUse, effectiveDiffStrategy, experiments)}
 
 ${getSystemInfoSection(cwd, mode, customModeConfigs)}
 
-${getObjectiveSection()}
+${taskCardSection}
+
+${getTaskCardGuidelinesSection(experiments)}
+
+${getObjectiveSection(experiments)}
 
 ${await addCustomInstructions(promptComponent?.customInstructions || modeConfig.customInstructions || "", globalCustomInstructions || "", cwd, mode, { language: language ?? formatLanguage(vscode.env.language), rooIgnoreInstructions })}`
 
@@ -112,6 +120,7 @@ export const SYSTEM_PROMPT = async (
 	enableMcpServerCreation?: boolean,
 	language?: string,
 	rooIgnoreInstructions?: string,
+	taskId?: string,
 ): Promise<string> => {
 	if (!context) {
 		throw new Error("Extension context is required for generating system prompt")
@@ -170,5 +179,6 @@ ${customInstructions}`
 		enableMcpServerCreation,
 		language,
 		rooIgnoreInstructions,
+		taskId,
 	)
 }

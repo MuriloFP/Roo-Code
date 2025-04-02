@@ -1,0 +1,23 @@
+{
+	"not_found": "Görev kartı bulunamadı",
+	"edit_title": "Görev kartını düzenle",
+	"status": "Durum",
+	"last_updated": "Son güncelleme",
+	"title": "Başlık",
+	"description": "Açıklama",
+	"steps": "Adımlar",
+	"no_steps": "Henüz adım eklenmedi",
+	"new_step": "Yeni adım ekle...",
+	"status_planned": "Planlandı",
+	"status_in_progress": "Devam ediyor",
+	"status_completed": "Tamamlandı",
+	"context": "Bağlam",
+	"no_context": "Henüz bağlam bilgisi eklenmedi",
+	"new_context": "Bağlam bilgisi ekle...",
+	"notes": "Notlar",
+	"no_notes": "Henüz not eklenmedi",
+	"new_note": "Not ekle...",
+	"no_comments": "Yorum yok",
+	"new_comment": "Yeni yorum",
+	"parent_task": "Üst görev"
+}

@@ -10,7 +10,8 @@
 		"contextWindow": "Context Window:",
 		"closeAndStart": "Close task and start a new one",
 		"export": "Export task history",
-		"delete": "Delete Task (Shift + Click to skip confirmation)"
+		"delete": "Delete Task (Shift + Click to skip confirmation)",
+		"taskCard": "Open task card"
 	},
 	"unpin": "Unpin",
 	"pin": "Pin",
@@ -109,9 +110,6 @@
 		"wantsToFetch": "Roo wants to fetch detailed instructions to assist with the current task"
 	},
 	"fileOperations": {
-		"wantsToRead": "Roo wants to read this file:",
-		"wantsToReadOutsideWorkspace": "Roo wants to read this file outside of the workspace:",
-		"didRead": "Roo read this file:",
 		"wantsToEdit": "Roo wants to edit this file:",
 		"wantsToEditOutsideWorkspace": "Roo wants to edit this file outside of the workspace:",
 		"wantsToCreate": "Roo wants to create a new file:"
@@ -125,6 +123,12 @@
 		"didViewDefinitions": "Roo viewed source code definition names used in this directory:",
 		"wantsToSearch": "Roo wants to search this directory for <code>{{regex}}</code>:",
 		"didSearch": "Roo searched this directory for <code>{{regex}}</code>:"
+	},
+	"taskCards": {
+		"wantsToUpdate": "Wants to update task card",
+		"didUpdate": "Task card updated",
+		"wantsToGet": "Wants to get task card",
+		"didGet": "Task card content"
 	},
 	"commandOutput": "Command Output",
 	"response": "Response",
@@ -195,6 +199,11 @@
 				"label": "Create & complete subtasks",
 				"shortName": "Subtasks",
 				"description": "Allow creation and completion of subtasks without requiring approval."
+			},
+			"taskCards": {
+				"label": "Update & view task cards",
+				"shortName": "Task Cards",
+				"description": "Allow updating and viewing task cards without requiring approval."
 			},
 			"retryRequests": {
 				"label": "Retry failed requests",

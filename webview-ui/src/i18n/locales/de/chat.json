@@ -10,7 +10,8 @@
 		"contextWindow": "Kontextfenster:",
 		"closeAndStart": "Aufgabe schließen und neue starten",
 		"export": "Aufgabenverlauf exportieren",
-		"delete": "Aufgabe löschen (Shift + Klick zum Überspringen der Bestätigung)"
+		"delete": "Aufgabe löschen (Shift + Klick zum Überspringen der Bestätigung)",
+		"taskCard": "Aufgabenkarte öffnen"
 	},
 	"unpin": "Lösen von oben",
 	"pin": "Anheften",

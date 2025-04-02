@@ -38,7 +38,7 @@ export type ProviderName = z.infer<typeof providerNamesSchema>
  * ToolGroup
  */
 
-export const toolGroups = ["read", "edit", "browser", "command", "mcp", "modes"] as const
+export const toolGroups = ["read", "edit", "browser", "command", "mcp", "modes", "task_cards"] as const
 
 export const toolGroupsSchema = z.enum(toolGroups)
 
@@ -279,6 +279,7 @@ export const experimentIds = [
 	"experimentalDiffStrategy",
 	"insert_content",
 	"powerSteering",
+	"task_cards",
 ] as const
 
 export const experimentIdsSchema = z.enum(experimentIds)
@@ -294,6 +295,7 @@ const experimentsSchema = z.object({
 	experimentalDiffStrategy: z.boolean(),
 	insert_content: z.boolean(),
 	powerSteering: z.boolean(),
+	task_cards: z.boolean(),
 })
 
 export type Experiments = z.infer<typeof experimentsSchema>
@@ -504,6 +506,7 @@ export const globalSettingsSchema = z.object({
 	alwaysAllowModeSwitch: z.boolean().optional(),
 	alwaysAllowSubtasks: z.boolean().optional(),
 	alwaysAllowExecute: z.boolean().optional(),
+	alwaysAllowTaskCards: z.boolean().optional(),
 	allowedCommands: z.array(z.string()).optional(),
 
 	browserToolEnabled: z.boolean().optional(),
@@ -575,6 +578,7 @@ const globalSettingsRecord: GlobalSettingsRecord = {
 	alwaysAllowModeSwitch: undefined,
 	alwaysAllowSubtasks: undefined,
 	alwaysAllowExecute: undefined,
+	alwaysAllowTaskCards: undefined,
 	allowedCommands: undefined,
 
 	browserToolEnabled: undefined,
