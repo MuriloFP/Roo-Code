@@ -56,7 +56,9 @@ vi.mock("os", () => ({
 	homedir: vi.fn(() => "/mock/home"),
 }))
 
-vi.mock("../../../utils/safeWriteJson")
+vi.mock("../../../utils/safeWriteJson", () => ({
+	safeWriteJson: vi.fn().mockResolvedValue(undefined),
+}))
 
 describe("importExport", () => {
 	let mockProviderSettingsManager: ReturnType<typeof vi.mocked<ProviderSettingsManager>>
@@ -82,6 +84,10 @@ describe("importExport", () => {
 			setValue: vi.fn(),
 			export: vi.fn().mockImplementation(() => Promise.resolve({})),
 			setProviderSettings: vi.fn(),
+			getGlobalState: vi.fn(),
+			getSecret: vi.fn(),
+			updateGlobalState: vi.fn(),
+			storeSecret: vi.fn(),
 		} as unknown as ReturnType<typeof vi.mocked<ContextProxy>>
 
 		mockCustomModesManager = { updateCustomMode: vi.fn() } as unknown as ReturnType<
@@ -436,6 +442,70 @@ describe("importExport", () => {
 
 			showErrorMessageSpy.mockRestore()
 		})
+
+		it("should import OpenAI Compatible codebase index settings correctly", async () => {
+			;(vscode.window.showOpenDialog as Mock).mockResolvedValue([{ fsPath: "/mock/path/settings.json" }])
+
+			const mockFileContent = JSON.stringify({
+				providerProfiles: {
+					currentApiConfigName: "test",
+					apiConfigs: { test: { apiProvider: "openai" as ProviderName, apiKey: "test-key", id: "test-id" } },
+				},
+				globalSettings: {
+					mode: "code",
+					codebaseIndexConfig: {
+						codebaseIndexEmbedderProvider: "openai-compatible",
+						codebaseIndexEmbedderBaseUrl: "https://api.example.com",
+						codebaseIndexEmbedderModelId: "text-embedding-3-small",
+						// OpenAI Compatible specific settings now nested within codebaseIndexConfig
+						codebaseIndexOpenAiCompatibleApiKey: "test-api-key",
+						codebaseIndexOpenAiCompatibleModelDimension: 1536,
+					},
+				},
+			})
+
+			;(fs.readFile as Mock).mockResolvedValue(mockFileContent)
+
+			const previousProviderProfiles = {
+				currentApiConfigName: "default",
+				apiConfigs: { default: { apiProvider: "anthropic" as ProviderName, id: "default-id" } },
+			}
+
+			mockProviderSettingsManager.export.mockResolvedValue(previousProviderProfiles)
+			mockProviderSettingsManager.listConfig.mockResolvedValue([])
+
+			const result = await importSettings({
+				providerSettingsManager: mockProviderSettingsManager,
+				contextProxy: mockContextProxy,
+				customModesManager: mockCustomModesManager,
+			})
+
+			expect(result.success).toBe(true)
+
+			// Verify that the main config was set
+			expect(mockContextProxy.setValues).toHaveBeenCalledWith({
+				mode: "code",
+				codebaseIndexConfig: {
+					codebaseIndexEmbedderProvider: "openai-compatible",
+					codebaseIndexEmbedderBaseUrl: "https://api.example.com",
+					codebaseIndexEmbedderModelId: "text-embedding-3-small",
+				},
+			})
+
+			// Verify that OpenAI Compatible specific settings were saved
+			expect(mockContextProxy.updateGlobalState).toHaveBeenCalledWith(
+				"codebaseIndexOpenAiCompatibleBaseUrl",
+				"https://api.example.com",
+			)
+			expect(mockContextProxy.storeSecret).toHaveBeenCalledWith(
+				"codebaseIndexOpenAiCompatibleApiKey",
+				"test-api-key",
+			)
+			expect(mockContextProxy.updateGlobalState).toHaveBeenCalledWith(
+				"codebaseIndexOpenAiCompatibleModelDimension",
+				1536,
+			)
+		})
 	})
 
 	describe("exportSettings", () => {
@@ -594,6 +664,55 @@ describe("importExport", () => {
 			})
 
 			expect(vscode.Uri.file).toHaveBeenCalledWith(path.join("/mock/home", "Documents", "roo-code-settings.json"))
+		})
+
+		it("should export OpenAI Compatible codebase index settings correctly", async () => {
+			;(vscode.window.showSaveDialog as Mock).mockResolvedValue({
+				fsPath: "/mock/path/roo-code-settings.json",
+			})
+
+			const mockProviderProfiles = {
+				currentApiConfigName: "test",
+				apiConfigs: { test: { apiProvider: "openai" as ProviderName, id: "test-id" } },
+				migrations: { rateLimitSecondsMigrated: false },
+			}
+
+			mockProviderSettingsManager.export.mockResolvedValue(mockProviderProfiles)
+
+			// Mock the export method to simulate what ContextProxy.export() actually returns
+			// when OpenAI Compatible is configured
+			const mockGlobalSettings = {
+				mode: "code",
+				codebaseIndexConfig: {
+					codebaseIndexEmbedderProvider: "openai-compatible",
+					codebaseIndexEmbedderBaseUrl: "https://api.example.com",
+					codebaseIndexEmbedderModelId: "text-embedding-3-small",
+					// These fields are added by the export method when provider is openai-compatible
+					codebaseIndexOpenAiCompatibleApiKey: "test-api-key",
+					codebaseIndexOpenAiCompatibleModelDimension: 1536,
+				},
+			}
+
+			mockContextProxy.export.mockResolvedValue(mockGlobalSettings as any)
+
+			// Mock fs.mkdir to succeed
+			;(fs.mkdir as Mock).mockResolvedValue(undefined)
+
+			await exportSettings({
+				providerSettingsManager: mockProviderSettingsManager,
+				contextProxy: mockContextProxy,
+			})
+
+			expect(vscode.window.showSaveDialog).toHaveBeenCalled()
+			expect(mockProviderSettingsManager.export).toHaveBeenCalled()
+			expect(mockContextProxy.export).toHaveBeenCalled()
+			expect(fs.mkdir).toHaveBeenCalledWith("/mock/path", { recursive: true })
+
+			// Verify that safeWriteJson was called with the correct data including OpenAI Compatible settings
+			expect(safeWriteJson).toHaveBeenCalledWith("/mock/path/roo-code-settings.json", {
+				providerProfiles: mockProviderProfiles,
+				globalSettings: mockGlobalSettings,
+			})
 		})
 	})
 })

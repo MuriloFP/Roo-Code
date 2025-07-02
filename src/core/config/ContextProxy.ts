@@ -245,6 +245,35 @@ export class ContextProxy {
 			// Exports should only contain global settings, so this skips project custom modes (those exist in the .roomode folder)
 			globalSettings.customModes = globalSettings.customModes?.filter((mode) => mode.source === "global")
 
+			// If using OpenAI Compatible embedder provider, include the provider-specific settings
+			if (globalSettings.codebaseIndexConfig?.codebaseIndexEmbedderProvider === "openai-compatible") {
+				// Get the OpenAI Compatible specific settings
+				const openAiCompatibleBaseUrl = this.getGlobalState("codebaseIndexOpenAiCompatibleBaseUrl")
+				const openAiCompatibleApiKey = this.getSecret("codebaseIndexOpenAiCompatibleApiKey")
+				const openAiCompatibleModelDimension = this.getGlobalState(
+					"codebaseIndexOpenAiCompatibleModelDimension",
+				)
+
+				// Add the OpenAI Compatible settings within the codebaseIndexConfig
+				if (globalSettings.codebaseIndexConfig) {
+					// Override the base URL with the OpenAI Compatible specific one
+					if (openAiCompatibleBaseUrl !== undefined) {
+						globalSettings.codebaseIndexConfig.codebaseIndexEmbedderBaseUrl = openAiCompatibleBaseUrl
+					}
+
+					// Add OpenAI Compatible specific fields to codebaseIndexConfig
+					// These will be properly typed extensions to the config
+					const enhancedConfig = {
+						...globalSettings.codebaseIndexConfig,
+						codebaseIndexOpenAiCompatibleApiKey: openAiCompatibleApiKey,
+						codebaseIndexOpenAiCompatibleModelDimension: openAiCompatibleModelDimension,
+					}
+
+					// Update the codebaseIndexConfig with the enhanced version
+					globalSettings.codebaseIndexConfig = enhancedConfig
+				}
+			}
+
 			return Object.fromEntries(Object.entries(globalSettings).filter(([_, value]) => value !== undefined))
 		} catch (error) {
 			if (error instanceof ZodError) {

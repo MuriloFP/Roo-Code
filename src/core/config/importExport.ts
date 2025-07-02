@@ -48,9 +48,25 @@ export async function importSettingsFromPath(
 	try {
 		const previousProviderProfiles = await providerSettingsManager.export()
 
-		const { providerProfiles: newProviderProfiles, globalSettings = {} } = schema.parse(
-			JSON.parse(await fs.readFile(filePath, "utf-8")),
-		)
+		const fileContent = JSON.parse(await fs.readFile(filePath, "utf-8"))
+
+		// Extract OpenAI Compatible settings before Zod parsing strips them
+		let openAiCompatibleSettings: {
+			apiKey?: string
+			modelDimension?: number
+			baseUrl?: string
+		} = {}
+
+		if (fileContent.globalSettings?.codebaseIndexConfig?.codebaseIndexEmbedderProvider === "openai-compatible") {
+			const config = fileContent.globalSettings.codebaseIndexConfig
+			openAiCompatibleSettings = {
+				apiKey: config.codebaseIndexOpenAiCompatibleApiKey,
+				modelDimension: config.codebaseIndexOpenAiCompatibleModelDimension,
+				baseUrl: config.codebaseIndexEmbedderBaseUrl,
+			}
+		}
+
+		const { providerProfiles: newProviderProfiles, globalSettings = {} } = schema.parse(fileContent)
 
 		const providerProfiles = {
 			currentApiConfigName: newProviderProfiles.currentApiConfigName,
@@ -69,6 +85,29 @@ export async function importSettingsFromPath(
 		)
 
 		await providerSettingsManager.import(providerProfiles)
+
+		// Handle OpenAI Compatible settings if present in the imported file
+		// These are stored separately from the main globalSettings
+		if (globalSettings.codebaseIndexConfig?.codebaseIndexEmbedderProvider === "openai-compatible") {
+			// Save the OpenAI Compatible specific settings that were extracted before parsing
+			if (openAiCompatibleSettings.apiKey !== undefined) {
+				await contextProxy.storeSecret("codebaseIndexOpenAiCompatibleApiKey", openAiCompatibleSettings.apiKey)
+			}
+			if (openAiCompatibleSettings.modelDimension !== undefined) {
+				await contextProxy.updateGlobalState(
+					"codebaseIndexOpenAiCompatibleModelDimension",
+					openAiCompatibleSettings.modelDimension,
+				)
+			}
+			// Also save the base URL to the OpenAI Compatible specific key
+			if (openAiCompatibleSettings.baseUrl !== undefined) {
+				await contextProxy.updateGlobalState(
+					"codebaseIndexOpenAiCompatibleBaseUrl",
+					openAiCompatibleSettings.baseUrl,
+				)
+			}
+		}
+
 		await contextProxy.setValues(globalSettings)
 
 		// Set the current provider.

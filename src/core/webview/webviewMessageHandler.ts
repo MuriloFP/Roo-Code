@@ -1317,6 +1317,34 @@ export const webviewMessageHandler = async (
 		case "upsertApiConfiguration":
 			if (message.text && message.apiConfiguration) {
 				await provider.upsertProviderProfile(message.text, message.apiConfiguration)
+
+				// If codebase index is using OpenAI Compatible provider, save the provider-specific settings
+				const codebaseIndexConfig = getGlobalState("codebaseIndexConfig")
+				if (codebaseIndexConfig?.codebaseIndexEmbedderProvider === "openai-compatible") {
+					// Save OpenAI Compatible base URL
+					if (message.apiConfiguration.codebaseIndexOpenAiCompatibleBaseUrl !== undefined) {
+						await updateGlobalState(
+							"codebaseIndexOpenAiCompatibleBaseUrl",
+							message.apiConfiguration.codebaseIndexOpenAiCompatibleBaseUrl,
+						)
+					}
+
+					// Save OpenAI Compatible API key as a secret
+					if (message.apiConfiguration.codebaseIndexOpenAiCompatibleApiKey !== undefined) {
+						await provider.contextProxy.storeSecret(
+							"codebaseIndexOpenAiCompatibleApiKey",
+							message.apiConfiguration.codebaseIndexOpenAiCompatibleApiKey,
+						)
+					}
+
+					// Save OpenAI Compatible model dimension
+					if (message.apiConfiguration.codebaseIndexOpenAiCompatibleModelDimension !== undefined) {
+						await updateGlobalState(
+							"codebaseIndexOpenAiCompatibleModelDimension",
+							message.apiConfiguration.codebaseIndexOpenAiCompatibleModelDimension,
+						)
+					}
+				}
 			}
 			break
 		case "renameApiConfiguration":
