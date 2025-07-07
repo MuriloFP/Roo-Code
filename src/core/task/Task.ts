@@ -348,6 +348,187 @@ export class Task extends EventEmitter<ClineEvents> {
 		}
 	}
 
+	// Context deduplication methods
+	private deduplicateReadFileHistory(): { removedCount: number; tokensSaved: number } {
+		const seenFiles = new Map<
+			string,
+			{
+				messageIndex: number
+				contentIndex: number
+				blockIndex?: number
+				ranges?: Array<{ start: number; end: number }>
+				isFullRead: boolean
+			}
+		>()
+
+		let removedCount = 0
+		let tokensSaved = 0
+
+		// Scan forwards to keep first occurrence and remove later duplicates
+		for (let i = 0; i < this.apiConversationHistory.length; i++) {
+			const message = this.apiConversationHistory[i]
+			if (message.role !== "user" || typeof message.content === "string") continue
+
+			for (let j = 0; j < message.content.length; j++) {
+				const content = message.content[j]
+
+				// Handle tool_result blocks
+				if (content.type === "tool_result" && content.content) {
+					const toolContent = Array.isArray(content.content) ? content.content : [content.content]
+
+					for (let k = 0; k < toolContent.length; k++) {
+						const block = toolContent[k]
+						if (typeof block === "object" && block.type === "text") {
+							const fileReads = this.parseFileReads(block.text)
+
+							for (const fileRead of fileReads) {
+								const existing = seenFiles.get(fileRead.path)
+
+								if (!existing) {
+									// First occurrence - keep it
+									seenFiles.set(fileRead.path, {
+										messageIndex: i,
+										contentIndex: j,
+										blockIndex: k,
+										ranges: fileRead.ranges,
+										isFullRead: fileRead.isFullRead,
+									})
+								} else if (this.shouldRemoveContent(fileRead, existing)) {
+									// Remove this duplicate occurrence
+									const oldContent = typeof block === "object" && "text" in block ? block.text : ""
+									const estimatedTokens = Math.ceil(oldContent.length / 4) // Rough token estimate
+									tokensSaved += estimatedTokens
+
+									// Replace with deduplication notice
+									if (Array.isArray(content.content)) {
+										content.content[k] = {
+											type: "text",
+											text: `[File content removed - already read ${fileRead.path}]`,
+										}
+									}
+									removedCount++
+								}
+							}
+						}
+					}
+				}
+				// Handle text blocks with file_content tags (from @mentions)
+				else if (content.type === "text") {
+					const fileContentMatches = Array.from(
+						content.text.matchAll(/<file_content\s+path="([^"]+)"[^>]*>([\s\S]*?)<\/file_content>/g),
+					)
+
+					for (const match of fileContentMatches) {
+						const [fullMatch, filePath, fileContent] = match
+						const existing = seenFiles.get(filePath)
+
+						if (!existing) {
+							seenFiles.set(filePath, {
+								messageIndex: i,
+								contentIndex: j,
+								isFullRead: true,
+							})
+						} else {
+							// Remove duplicate file_content
+							const estimatedTokens = Math.ceil(fileContent.length / 4)
+							tokensSaved += estimatedTokens
+
+							content.text = content.text.replace(
+								fullMatch,
+								`<file_content path="${filePath}">[Content removed - already included]</file_content>`,
+							)
+							removedCount++
+						}
+					}
+				}
+			}
+		}
+
+		return { removedCount, tokensSaved }
+	}
+
+	private parseFileReads(text: string): Array<{
+		path: string
+		ranges?: Array<{ start: number; end: number }>
+		isFullRead: boolean
+	}> {
+		const results: Array<{
+			path: string
+			ranges?: Array<{ start: number; end: number }>
+			isFullRead: boolean
+		}> = []
+
+		// Match read_file results in the format from readFileTool
+		// Pattern for: Result:<files><file><path>filepath</path>
+		const filePathPattern = /<file><path>([^<]+)<\/path>/g
+		let match
+
+		while ((match = filePathPattern.exec(text)) !== null) {
+			const path = match[1]
+			const fileResult = {
+				path,
+				ranges: [] as Array<{ start: number; end: number }>,
+				isFullRead: true,
+			}
+
+			// Check for line ranges in the same file block
+			const fileBlockMatch = text.match(
+				new RegExp(`<file><path>${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}<\/path>[\\s\\S]*?<\/file>`, "s"),
+			)
+			if (fileBlockMatch) {
+				const fileBlock = fileBlockMatch[0]
+				// Look for content with line ranges
+				const rangeMatches = fileBlock.matchAll(/<content\s+lines="(\d+)-(\d+)">/g)
+
+				for (const rangeMatch of rangeMatches) {
+					const [, start, end] = rangeMatch
+					fileResult.ranges?.push({
+						start: parseInt(start, 10),
+						end: parseInt(end, 10),
+					})
+					fileResult.isFullRead = false
+				}
+			}
+
+			results.push(fileResult)
+		}
+
+		return results
+	}
+
+	private shouldRemoveContent(
+		current: { ranges?: Array<{ start: number; end: number }>; isFullRead: boolean },
+		existing: { ranges?: Array<{ start: number; end: number }>; isFullRead: boolean },
+	): boolean {
+		// If existing is full read, remove all later content
+		if (existing.isFullRead) return true
+
+		// If current is full read but existing is partial, keep current (don't remove)
+		if (current.isFullRead && !existing.isFullRead) return false
+
+		// Check for range overlap
+		if (existing.ranges && current.ranges && existing.ranges.length > 0 && current.ranges.length > 0) {
+			return this.hasOverlap(existing.ranges, current.ranges)
+		}
+
+		// Default to removing if we can't determine overlap
+		return true
+	}
+
+	private hasOverlap(
+		rangesA: Array<{ start: number; end: number }>,
+		rangesB: Array<{ start: number; end: number }>,
+	): boolean {
+		for (const a of rangesA) {
+			for (const b of rangesB) {
+				if (a.start <= b.end && b.start <= a.end) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
 	// Cline Messages
 
 	private async getSavedClineMessages(): Promise<ClineMessage[]> {
@@ -1723,6 +1904,16 @@ export class Task extends EventEmitter<ClineEvents> {
 			const currentProfileId =
 				state?.listApiConfigMeta.find((profile) => profile.name === state?.currentApiConfigName)?.id ??
 				"default"
+
+			// Apply context deduplication if enabled
+			if (state?.experiments?.contextDeduplication) {
+				const { removedCount, tokensSaved } = this.deduplicateReadFileHistory()
+				if (removedCount > 0) {
+					console.log(
+						`Context deduplication: removed ${removedCount} duplicate file reads, saved ~${tokensSaved} tokens`,
+					)
+				}
+			}
 
 			const truncateResult = await truncateConversationIfNeeded({
 				messages: this.apiConversationHistory,
