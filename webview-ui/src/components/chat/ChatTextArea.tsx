@@ -1147,6 +1147,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							title={t("chat:addImages")}
 							disabled={shouldDisableImages}
 							onClick={onSelectImages}
+							className="mr-1"
 						/>
 					</div>
 				</div>
