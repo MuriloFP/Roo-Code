@@ -122,6 +122,41 @@ export const ServerConfigSchema = createServerTypeSchema()
 const McpSettingsSchema = z.object({
 	mcpServers: z.record(ServerConfigSchema),
 })
+/**
+ * Get Windows-specific environment variables that are critical for
+ * subprocess operation but may not be included by getDefaultEnvironment()
+ */
+function getWindowsCriticalEnvVars(): Record<string, string> {
+	if (process.platform !== "win32") {
+		return {}
+	}
+
+	const envVars: Record<string, string> = {}
+	const criticalVars = {
+		APPDATA: process.env.APPDATA,
+		LOCALAPPDATA: process.env.LOCALAPPDATA,
+		USERPROFILE: process.env.USERPROFILE,
+		PROGRAMDATA: process.env.PROGRAMDATA,
+		TEMP: process.env.TEMP,
+		TMP: process.env.TMP,
+		HOMEDRIVE: process.env.HOMEDRIVE,
+		HOMEPATH: process.env.HOMEPATH,
+		SystemRoot: process.env.SystemRoot,
+		SystemDrive: process.env.SystemDrive,
+		ComSpec: process.env.ComSpec,
+		PATHEXT: process.env.PATHEXT,
+		windir: process.env.windir,
+	}
+
+	// Only include defined environment variables
+	for (const [key, value] of Object.entries(criticalVars)) {
+		if (value !== undefined) {
+			envVars[key] = value
+		}
+	}
+
+	return envVars
+}
 
 export class McpHub {
 	private providerRef: WeakRef<ClineProvider>
@@ -602,6 +637,7 @@ export class McpHub {
 					cwd: configInjected.cwd,
 					env: {
 						...getDefaultEnvironment(),
+						...getWindowsCriticalEnvVars(),
 						...(configInjected.env || {}),
 					},
 					stderr: "pipe",

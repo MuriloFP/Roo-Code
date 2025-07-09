@@ -93,7 +93,6 @@ describe("McpHub", () => {
 		// Mock console.error to suppress error messages during tests
 		console.error = vi.fn()
 
-
 		const mockUri: Uri = {
 			scheme: "file",
 			authority: "",
@@ -1225,6 +1224,236 @@ describe("McpHub", () => {
 					args: ["/c", "echo", "test"],
 				}),
 			)
+		})
+	})
+	describe("Windows environment variable handling", () => {
+		let originalPlatform: PropertyDescriptor | undefined
+		let originalEnv: NodeJS.ProcessEnv
+		let StdioClientTransport: ReturnType<typeof vi.fn>
+		let Client: ReturnType<typeof vi.fn>
+
+		beforeEach(async () => {
+			originalPlatform = Object.getOwnPropertyDescriptor(process, "platform")
+			originalEnv = { ...process.env }
+
+			// Mock Windows platform
+			Object.defineProperty(process, "platform", {
+				value: "win32",
+				configurable: true,
+			})
+
+			// Set Windows env vars
+			process.env.APPDATA = "C:\\Users\\TestUser\\AppData\\Roaming"
+			process.env.LOCALAPPDATA = "C:\\Users\\TestUser\\AppData\\Local"
+			process.env.USERPROFILE = "C:\\Users\\TestUser"
+			process.env.TEMP = "C:\\Users\\TestUser\\AppData\\Local\\Temp"
+			process.env.TMP = "C:\\Users\\TestUser\\AppData\\Local\\Temp"
+
+			// Import mocked modules
+			const stdioModule = await import("@modelcontextprotocol/sdk/client/stdio.js")
+			const clientModule = await import("@modelcontextprotocol/sdk/client/index.js")
+			StdioClientTransport = stdioModule.StdioClientTransport as ReturnType<typeof vi.fn>
+			Client = clientModule.Client as ReturnType<typeof vi.fn>
+
+			// Mock Client
+			Client.mockImplementation(() => ({
+				connect: vi.fn().mockResolvedValue(undefined),
+				close: vi.fn().mockResolvedValue(undefined),
+				getInstructions: vi.fn().mockReturnValue("test instructions"),
+				request: vi.fn().mockResolvedValue({ tools: [], resources: [], resourceTemplates: [] }),
+			}))
+		})
+
+		afterEach(() => {
+			if (originalPlatform) {
+				Object.defineProperty(process, "platform", originalPlatform)
+			}
+			process.env = originalEnv
+		})
+
+		it("should pass Windows environment variables to stdio transport", async () => {
+			const mockTransport = {
+				start: vi.fn().mockResolvedValue(undefined),
+				close: vi.fn().mockResolvedValue(undefined),
+				stderr: {
+					on: vi.fn(),
+				},
+				onerror: null,
+				onclose: null,
+			}
+
+			let capturedEnv: any
+			StdioClientTransport.mockImplementation((options: any) => {
+				capturedEnv = options.env
+				return mockTransport
+			})
+
+			// Create a new McpHub instance
+			const mcpHub = new McpHub(mockProvider as ClineProvider)
+
+			// Mock the config file read
+			vi.mocked(fs.readFile).mockResolvedValue(
+				JSON.stringify({
+					mcpServers: {
+						"test-server": {
+							command: "npx",
+							args: ["-y", "@test/mcp-server"],
+						},
+					},
+				}),
+			)
+
+			// Initialize servers (this will trigger connectToServer)
+			await mcpHub["initializeGlobalMcpServers"]()
+
+			// Verify environment variables are passed
+			expect(capturedEnv).toBeDefined()
+			expect(capturedEnv.APPDATA).toBe("C:\\Users\\TestUser\\AppData\\Roaming")
+			expect(capturedEnv.LOCALAPPDATA).toBe("C:\\Users\\TestUser\\AppData\\Local")
+			expect(capturedEnv.USERPROFILE).toBe("C:\\Users\\TestUser")
+			expect(capturedEnv.TEMP).toBe("C:\\Users\\TestUser\\AppData\\Local\\Temp")
+			expect(capturedEnv.TMP).toBe("C:\\Users\\TestUser\\AppData\\Local\\Temp")
+		})
+
+		it("should not include Windows env vars on non-Windows platforms", async () => {
+			// Change platform to Linux
+			Object.defineProperty(process, "platform", {
+				value: "linux",
+				configurable: true,
+			})
+
+			const mockTransport = {
+				start: vi.fn().mockResolvedValue(undefined),
+				close: vi.fn().mockResolvedValue(undefined),
+				stderr: {
+					on: vi.fn(),
+				},
+				onerror: null,
+				onclose: null,
+			}
+
+			let capturedEnv: any
+			StdioClientTransport.mockImplementation((options: any) => {
+				capturedEnv = options.env
+				return mockTransport
+			})
+
+			// Create a new McpHub instance
+			const mcpHub = new McpHub(mockProvider as ClineProvider)
+
+			// Mock the config file read
+			vi.mocked(fs.readFile).mockResolvedValue(
+				JSON.stringify({
+					mcpServers: {
+						"test-server": {
+							command: "node",
+							args: ["test.js"],
+						},
+					},
+				}),
+			)
+
+			// Initialize servers (this will trigger connectToServer)
+			await mcpHub["initializeGlobalMcpServers"]()
+
+			// Verify Windows-specific env vars are not included
+			expect(capturedEnv).toBeDefined()
+			expect(capturedEnv.APPDATA).toBeUndefined()
+			expect(capturedEnv.LOCALAPPDATA).toBeUndefined()
+		})
+
+		it("should allow user-specified env vars to override system ones", async () => {
+			const mockTransport = {
+				start: vi.fn().mockResolvedValue(undefined),
+				close: vi.fn().mockResolvedValue(undefined),
+				stderr: {
+					on: vi.fn(),
+				},
+				onerror: null,
+				onclose: null,
+			}
+
+			let capturedEnv: any
+			StdioClientTransport.mockImplementation((options: any) => {
+				capturedEnv = options.env
+				return mockTransport
+			})
+
+			// Create a new McpHub instance
+			const mcpHub = new McpHub(mockProvider as ClineProvider)
+
+			// Mock the config file read
+			vi.mocked(fs.readFile).mockResolvedValue(
+				JSON.stringify({
+					mcpServers: {
+						"test-server": {
+							command: "npx",
+							args: ["-y", "@test/mcp-server"],
+							env: {
+								APPDATA: "C:\\CustomPath\\AppData",
+								CUSTOM_VAR: "custom_value",
+							},
+						},
+					},
+				}),
+			)
+
+			// Initialize servers (this will trigger connectToServer)
+			await mcpHub["initializeGlobalMcpServers"]()
+
+			// Verify user-specified env vars take precedence
+			expect(capturedEnv).toBeDefined()
+			expect(capturedEnv.APPDATA).toBe("C:\\CustomPath\\AppData")
+			expect(capturedEnv.CUSTOM_VAR).toBe("custom_value")
+			// Other Windows vars should still be included
+			expect(capturedEnv.USERPROFILE).toBe("C:\\Users\\TestUser")
+		})
+
+		it("should handle undefined Windows env vars gracefully", async () => {
+			// Unset some env vars
+			delete process.env.APPDATA
+			delete process.env.LOCALAPPDATA
+
+			const mockTransport = {
+				start: vi.fn().mockResolvedValue(undefined),
+				close: vi.fn().mockResolvedValue(undefined),
+				stderr: {
+					on: vi.fn(),
+				},
+				onerror: null,
+				onclose: null,
+			}
+
+			let capturedEnv: any
+			StdioClientTransport.mockImplementation((options: any) => {
+				capturedEnv = options.env
+				return mockTransport
+			})
+
+			// Create a new McpHub instance
+			const mcpHub = new McpHub(mockProvider as ClineProvider)
+
+			// Mock the config file read
+			vi.mocked(fs.readFile).mockResolvedValue(
+				JSON.stringify({
+					mcpServers: {
+						"test-server": {
+							command: "npx",
+							args: ["-y", "@test/mcp-server"],
+						},
+					},
+				}),
+			)
+
+			// Initialize servers (this will trigger connectToServer)
+			await mcpHub["initializeGlobalMcpServers"]()
+
+			// Verify undefined vars are not included
+			expect(capturedEnv).toBeDefined()
+			expect(capturedEnv.APPDATA).toBeUndefined()
+			expect(capturedEnv.LOCALAPPDATA).toBeUndefined()
+			// But defined vars should still be included
+			expect(capturedEnv.USERPROFILE).toBe("C:\\Users\\TestUser")
 		})
 	})
 })
