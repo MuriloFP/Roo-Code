@@ -345,7 +345,8 @@
 			{
 				"command": "roo-cline.plusButtonClicked",
 				"key": "ctrl+l",
-				"mac": "cmd+l"
+				"mac": "cmd+l",
+				"when": "view == roo-cline.SidebarProvider || activeWebviewPanelId == roo-cline.TabPanelProvider"
 			}
 		]
 	},
