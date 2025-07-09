@@ -63,12 +63,14 @@ export type RegisterCommandOptions = {
 }
 
 export const registerCommands = (options: RegisterCommandOptions) => {
-	const { context } = options
+	const { context, outputChannel } = options
 
 	for (const [id, callback] of Object.entries(getCommandsMap(options))) {
 		const command = getCommand(id as CommandId)
+		outputChannel.appendLine(`[Roo Debug] Registering command: ${command}`)
 		context.subscriptions.push(vscode.commands.registerCommand(command, callback))
 	}
+	outputChannel.appendLine(`[Roo Debug] All commands registered successfully`)
 }
 
 const getCommandsMap = ({ context, outputChannel, provider }: RegisterCommandOptions): Record<CommandId, any> => ({
