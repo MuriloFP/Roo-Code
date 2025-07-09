@@ -1334,5 +1334,420 @@ describe("Cline", () => {
 				expect(task.diffStrategy).toBeUndefined()
 			})
 		})
+
+		describe("Context Deduplication", () => {
+			let task: Task
+
+			beforeEach(() => {
+				task = new Task({
+					provider: mockProvider,
+					apiConfiguration: mockApiConfig,
+					task: "test task",
+					startTask: false,
+				})
+			})
+
+			it("should remove duplicate file reads from conversation history", () => {
+				// Set up conversation history with duplicate file reads
+				task.apiConversationHistory = [
+					{
+						role: "user",
+						content: [{ type: "text", text: "Read this file" }],
+					},
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "1",
+								content: [
+									{
+										type: "text",
+										text: "Result:<files><file><path>src/app.ts</path><content>const app = 'test';</content></file></files>",
+									},
+								],
+							},
+						],
+					},
+					{
+						role: "assistant",
+						content: [{ type: "text", text: "I see the file" }],
+					},
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "2",
+								content: [
+									{
+										type: "text",
+										text: "Result:<files><file><path>src/app.ts</path><content>const app = 'test';</content></file></files>",
+									},
+								],
+							},
+						],
+					},
+				]
+
+				const result = (task as any).deduplicateReadFileHistory()
+
+				expect(result.removedCount).toBe(1)
+				expect(result.tokensSaved).toBeGreaterThan(0)
+
+				// Check that the older duplicate was replaced
+				const toolResult = task.apiConversationHistory[3].content[0] as any
+				expect(toolResult.type).toBe("tool_result")
+				expect(toolResult.content[0].text).toContain("[File content removed - already read src/app.ts]")
+			})
+
+			it("should handle multiple files in a single read operation", () => {
+				task.apiConversationHistory = [
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "1",
+								content: [
+									{
+										type: "text",
+										text: `Result:<files>
+<file><path>src/app.ts</path><content>const app = 'test';</content></file>
+<file><path>src/utils.ts</path><content>export const util = () => {};</content></file>
+</files>`,
+									},
+								],
+							},
+						],
+					},
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "2",
+								content: [
+									{
+										type: "text",
+										text: "Result:<files><file><path>src/app.ts</path><content>const app = 'test';</content></file></files>",
+									},
+								],
+							},
+						],
+					},
+				]
+
+				const result = (task as any).deduplicateReadFileHistory()
+
+				expect(result.removedCount).toBe(1)
+				// The second read of app.ts should be deduplicated
+				const toolResult = task.apiConversationHistory[1].content[0] as any
+				expect(toolResult.content[0].text).toContain("[File content removed - already read src/app.ts]")
+			})
+
+			it("should handle partial file reads with line ranges", () => {
+				task.apiConversationHistory = [
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "1",
+								content: [
+									{
+										type: "text",
+										text: `Result:<files><file><path>src/app.ts</path><content lines="1-10">const app = 'test';</content></file></files>`,
+									},
+								],
+							},
+						],
+					},
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "2",
+								content: [
+									{
+										type: "text",
+										text: `Result:<files><file><path>src/app.ts</path><content lines="5-15">const app = 'test';</content></file></files>`,
+									},
+								],
+							},
+						],
+					},
+				]
+
+				const result = (task as any).deduplicateReadFileHistory()
+
+				// Should detect overlap and remove the duplicate
+				expect(result.removedCount).toBe(1)
+			})
+
+			it("should keep full file read when partial read exists", () => {
+				task.apiConversationHistory = [
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "1",
+								content: [
+									{
+										type: "text",
+										text: `Result:<files><file><path>src/app.ts</path><content lines="1-10">partial content</content></file></files>`,
+									},
+								],
+							},
+						],
+					},
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "2",
+								content: [
+									{
+										type: "text",
+										text: `Result:<files><file><path>src/app.ts</path><content>full file content</content></file></files>`,
+									},
+								],
+							},
+						],
+					},
+				]
+
+				const result = (task as any).deduplicateReadFileHistory()
+
+				// Should not remove the full file read
+				expect(result.removedCount).toBe(0)
+			})
+
+			it("should handle file_content tags from @mentions", () => {
+				task.apiConversationHistory = [
+					{
+						role: "user",
+						content: [
+							{
+								type: "text",
+								text: `Here's a file: <file_content path="src/app.ts">const app = 'test';</file_content>`,
+							},
+						],
+					},
+					{
+						role: "user",
+						content: [
+							{
+								type: "text",
+								text: `Same file again: <file_content path="src/app.ts">const app = 'test';</file_content>`,
+							},
+						],
+					},
+				]
+
+				const result = (task as any).deduplicateReadFileHistory()
+
+				expect(result.removedCount).toBe(1)
+				expect((task.apiConversationHistory[1].content[0] as any).text).toContain(
+					"[Content removed - already included]",
+				)
+			})
+
+			it("should not deduplicate when experiment is disabled", async () => {
+				// Mock provider state without the experiment enabled
+				mockProvider.getState = vi.fn().mockResolvedValue({
+					apiConfiguration: mockApiConfig,
+					experiments: {
+						contextDeduplication: false,
+					},
+				})
+
+				// Create a new task instance that will use the mocked provider
+				const taskWithoutExperiment = new Task({
+					provider: mockProvider,
+					apiConfiguration: mockApiConfig,
+					task: "test task",
+					startTask: false,
+				})
+
+				// Add duplicate content
+				taskWithoutExperiment.apiConversationHistory = [
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "1",
+								content: [
+									{
+										type: "text",
+										text: "Result:<files><file><path>src/app.ts</path><content>const app = 'test';</content></file></files>",
+									},
+								],
+							},
+						],
+					},
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "2",
+								content: [
+									{
+										type: "text",
+										text: "Result:<files><file><path>src/app.ts</path><content>const app = 'test';</content></file></files>",
+									},
+								],
+							},
+						],
+					},
+				]
+
+				// Spy on console.log to verify deduplication is not called
+				const consoleSpy = vi.spyOn(console, "log")
+
+				// Mock the API stream generator
+				const mockStream = (async function* () {
+					yield { type: "text", text: "test response" } as ApiStreamChunk
+				})()
+
+				vi.spyOn(taskWithoutExperiment.api, "createMessage").mockReturnValue(mockStream)
+
+				// Trigger attemptApiRequest which should check the experiment flag
+				const generator = taskWithoutExperiment.attemptApiRequest()
+
+				// Consume the generator to trigger the deduplication check
+				for await (const chunk of generator) {
+					// Just consume the chunks
+				}
+
+				// Verify deduplication was not called
+				expect(consoleSpy).not.toHaveBeenCalledWith(expect.stringContaining("Context deduplication:"))
+
+				// Verify content was not modified
+				const secondToolResult = taskWithoutExperiment.apiConversationHistory[1].content[0] as any
+				expect(secondToolResult.content[0].text).not.toContain("[File content removed")
+			})
+
+			it("should correctly identify overlapping line ranges", () => {
+				const ranges1 = [
+					{ start: 1, end: 10 },
+					{ start: 20, end: 30 },
+				]
+				const ranges2 = [
+					{ start: 5, end: 15 },
+					{ start: 25, end: 35 },
+				]
+
+				expect((task as any).hasOverlap(ranges1, ranges2)).toBe(true)
+
+				const ranges3 = [{ start: 1, end: 10 }]
+				const ranges4 = [{ start: 11, end: 20 }]
+
+				expect((task as any).hasOverlap(ranges3, ranges4)).toBe(false)
+			})
+
+			it("should handle edge cases in file path parsing", () => {
+				task.apiConversationHistory = [
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "1",
+								content: [
+									{
+										type: "text",
+										text: `Result:<files><file><path>src/files/with spaces.ts</path><content>test</content></file></files>`,
+									},
+								],
+							},
+						],
+					},
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "2",
+								content: [
+									{
+										type: "text",
+										text: `Result:<files><file><path>src/files/with spaces.ts</path><content>test</content></file></files>`,
+									},
+								],
+							},
+						],
+					},
+				]
+
+				const result = (task as any).deduplicateReadFileHistory()
+				expect(result.removedCount).toBe(1)
+			})
+
+			it("should handle string content in tool_result", () => {
+				task.apiConversationHistory = [
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "1",
+								content: "Simple string content",
+							},
+						],
+					},
+				]
+
+				// Should not throw error
+				expect(() => (task as any).deduplicateReadFileHistory()).not.toThrow()
+			})
+
+			it("should calculate token savings correctly", () => {
+				const longContent = "a".repeat(1000) // 1000 characters
+				task.apiConversationHistory = [
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "1",
+								content: [
+									{
+										type: "text",
+										text: `Result:<files><file><path>src/app.ts</path><content>${longContent}</content></file></files>`,
+									},
+								],
+							},
+						],
+					},
+					{
+						role: "user",
+						content: [
+							{
+								type: "tool_result",
+								tool_use_id: "2",
+								content: [
+									{
+										type: "text",
+										text: `Result:<files><file><path>src/app.ts</path><content>${longContent}</content></file></files>`,
+									},
+								],
+							},
+						],
+					},
+				]
+
+				const result = (task as any).deduplicateReadFileHistory()
+
+				// Rough estimate: 1000 chars / 4 = ~250 tokens
+				expect(result.tokensSaved).toBeGreaterThan(200)
+				expect(result.tokensSaved).toBeLessThan(300)
+			})
+		})
 	})
 })
