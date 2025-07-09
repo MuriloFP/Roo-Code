@@ -340,7 +340,15 @@
 					"description": "%settings.autoImportSettingsPath.description%"
 				}
 			}
-		}
+		},
+		"keybindings": [
+			{
+				"command": "roo-cline.plusButtonClicked",
+				"key": "ctrl+l",
+				"mac": "cmd+l",
+				"when": "view.roo-cline.SidebarProvider.visible && focusedView == 'roo-cline.SidebarProvider'"
+			}
+		]
 	},
 	"scripts": {
 		"lint": "eslint . --ext=ts --max-warnings=0",
