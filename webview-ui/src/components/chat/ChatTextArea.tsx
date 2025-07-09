@@ -382,6 +382,18 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					return
 				}
 
+				// Handle Ctrl+L / Cmd+L to send message
+				if ((event.ctrlKey || event.metaKey) && event.key === "l" && !isComposing) {
+					event.preventDefault()
+
+					if (!sendingDisabled) {
+						// Reset history navigation state when sending
+						resetHistoryNavigation()
+						onSend()
+					}
+					return
+				}
+
 				if (event.key === "Enter" && !event.shiftKey && !isComposing) {
 					event.preventDefault()
 

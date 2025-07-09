@@ -347,6 +347,12 @@
 				"key": "ctrl+l",
 				"mac": "cmd+l",
 				"when": "view == roo-cline.SidebarProvider || activeWebviewPanelId == roo-cline.TabPanelProvider"
+			},
+			{
+				"command": "roo-cline.acceptInput",
+				"key": "ctrl+l",
+				"mac": "cmd+l",
+				"when": "(view == roo-cline.SidebarProvider || activeWebviewPanelId == roo-cline.TabPanelProvider) && inputFocus"
 			}
 		]
 	},
