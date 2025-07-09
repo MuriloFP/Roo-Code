@@ -708,7 +708,29 @@ export const webviewMessageHandler = async (
 		}
 		case "mcpEnabled":
 			const mcpEnabled = message.bool ?? true
+			const previousMcpEnabled = (await provider.getState())?.mcpEnabled ?? true
+
 			await updateGlobalState("mcpEnabled", mcpEnabled)
+
+			// If MCP is being re-enabled (was off, now on), refresh all connections
+			if (!previousMcpEnabled && mcpEnabled) {
+				const mcpHub = provider.getMcpHub()
+				if (mcpHub) {
+					try {
+						// This will reload configuration files and re-establish connections
+						await mcpHub.refreshAllConnections()
+					} catch (error) {
+						provider.log(
+							`Failed to refresh MCP connections on toggle: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
+						)
+						// Optionally show user-friendly error message
+						vscode.window.showErrorMessage(
+							"Failed to reload MCP configuration. Please check your settings.",
+						)
+					}
+				}
+			}
+
 			await provider.postStateToWebview()
 			break
 		case "enableMcpServerCreation":

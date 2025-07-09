@@ -925,4 +925,123 @@ suite("Roo Code use_mcp_tool Tool", function () {
 			api.off("taskCompleted", taskCompletedHandler)
 		}
 	})
+
+	test("Should reload MCP configuration when toggled off and on", async function () {
+		const api = globalThis.api
+		const messages: ClineMessage[] = []
+		let mcpToolRequested = false
+		let mcpServerResponse: string | null = null
+		let attemptCompletionCalled = false
+		let errorOccurred: string | null = null
+
+		// Listen for messages
+		const messageHandler = ({ message }: { message: ClineMessage }) => {
+			messages.push(message)
+
+			// Check for MCP tool request
+			if (message.type === "ask" && message.ask === "use_mcp_server") {
+				mcpToolRequested = true
+				console.log("MCP tool request:", message.text?.substring(0, 200))
+			}
+
+			// Check for MCP server response
+			if (message.type === "say" && message.say === "mcp_server_response") {
+				mcpServerResponse = message.text || null
+				console.log("MCP server response received:", message.text?.substring(0, 200))
+			}
+
+			// Check for attempt_completion
+			if (message.type === "say" && message.say === "completion_result") {
+				attemptCompletionCalled = true
+				console.log("Attempt completion called:", message.text?.substring(0, 200))
+			}
+
+			// Log important messages for debugging
+			if (message.type === "say" && message.say === "error") {
+				errorOccurred = message.text || "Unknown error"
+				console.error("Error:", message.text)
+			}
+		}
+		api.on("message", messageHandler)
+
+		try {
+			// First, ensure MCP is enabled and working
+			const fileName = path.basename(testFiles.simple)
+			await api.startNewTask({
+				configuration: {
+					mode: "code",
+					autoApprovalEnabled: true,
+					alwaysAllowMcp: true,
+					mcpEnabled: true,
+				},
+				text: `Use the MCP filesystem server's read_file tool to read the file "${fileName}".`,
+			})
+
+			// Wait for first task to complete
+			await waitFor(() => attemptCompletionCalled, { timeout: 45_000 })
+			assert.ok(mcpToolRequested, "Initial MCP tool should have been requested")
+
+			// Reset flags
+			mcpToolRequested = false
+			attemptCompletionCalled = false
+			mcpServerResponse = null
+
+			// Modify the MCP configuration to add a new server
+			console.log("Modifying MCP configuration...")
+			const workspaceDir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || tempDir
+			const updatedConfig = {
+				mcpServers: {
+					filesystem: {
+						command: "npx",
+						args: ["-y", "@modelcontextprotocol/server-filesystem", workspaceDir],
+						alwaysAllow: ["read_file", "write_file", "list_directory"],
+					},
+					memory: {
+						command: "npx",
+						args: ["-y", "@modelcontextprotocol/server-memory"],
+						alwaysAllow: ["store", "retrieve", "list"],
+					},
+				},
+			}
+			await fs.writeFile(testFiles.mcpConfig, JSON.stringify(updatedConfig, null, 2))
+
+			// Toggle MCP off
+			console.log("Toggling MCP off...")
+			await vscode.commands.executeCommand("roo-code.toggleMcp", false)
+			await sleep(1000)
+
+			// Toggle MCP on
+			console.log("Toggling MCP back on...")
+			await vscode.commands.executeCommand("roo-code.toggleMcp", true)
+			await sleep(3000) // Wait for reload and reconnection
+
+			// Start a new task to verify the configuration was reloaded
+			await api.startNewTask({
+				configuration: {
+					mode: "code",
+					autoApprovalEnabled: true,
+					alwaysAllowMcp: true,
+					mcpEnabled: true,
+				},
+				text: `List all available MCP servers and their tools. Then use the memory server's store tool to save a test value with key "test-key" and value "test-value".`,
+			})
+
+			// Wait for task to complete
+			await waitFor(() => attemptCompletionCalled, { timeout: 45_000 })
+
+			// Verify MCP tool was requested
+			assert.ok(mcpToolRequested, "MCP tool should have been requested after reload")
+
+			// Verify we got a response
+			assert.ok(mcpServerResponse, "Should have received a response from the MCP server")
+
+			// Check that no errors occurred
+			assert.strictEqual(errorOccurred, null, "No errors should have occurred")
+
+			console.log("Test passed! MCP configuration reloaded successfully after toggle")
+		} finally {
+			// Clean up
+			api.off("message", messageHandler)
+		}
+	})
 })

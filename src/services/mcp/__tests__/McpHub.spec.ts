@@ -93,7 +93,6 @@ describe("McpHub", () => {
 		// Mock console.error to suppress error messages during tests
 		console.error = vi.fn()
 
-
 		const mockUri: Uri = {
 			scheme: "file",
 			authority: "",
@@ -1225,6 +1224,81 @@ describe("McpHub", () => {
 					args: ["/c", "echo", "test"],
 				}),
 			)
+		})
+	})
+
+	describe("Configuration Reload on Toggle", () => {
+		it("should reload configuration files when MCP is toggled off and on", async () => {
+			// Setup initial configuration
+			const initialConfig = {
+				mcpServers: {
+					"test-server": {
+						command: "node",
+						args: ["test.js"],
+						type: "stdio",
+					},
+				},
+			}
+
+			// Mock StdioClientTransport and Client for the connections
+			const { StdioClientTransport } = await import("@modelcontextprotocol/sdk/client/stdio.js")
+			const { Client } = await import("@modelcontextprotocol/sdk/client/index.js")
+
+			vi.mocked(StdioClientTransport).mockImplementation(
+				() =>
+					({
+						start: vi.fn(),
+						close: vi.fn(),
+					}) as any,
+			)
+
+			vi.mocked(Client).mockImplementation(
+				() =>
+					({
+						connect: vi.fn().mockResolvedValue(undefined),
+						listTools: vi.fn().mockResolvedValue({ tools: [] }),
+						listResources: vi.fn().mockResolvedValue({ resources: [] }),
+						close: vi.fn().mockResolvedValue(undefined),
+					}) as any,
+			)
+
+			// Mock initial config
+			vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(initialConfig))
+
+			// Initialize McpHub by calling refreshAllConnections
+			await mcpHub.refreshAllConnections()
+
+			// Verify initial server exists
+			expect(mcpHub.getServers()).toHaveLength(1)
+			expect(mcpHub.getServers()[0].name).toBe("test-server")
+
+			// Modify configuration file
+			const updatedConfig = {
+				mcpServers: {
+					"test-server": {
+						command: "node",
+						args: ["updated.js"],
+						type: "stdio",
+					},
+					"new-server": {
+						command: "python",
+						args: ["script.py"],
+						type: "stdio",
+					},
+				},
+			}
+
+			// Mock the updated config for the next read
+			vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(updatedConfig))
+
+			// Simulate toggle off/on by calling refreshAllConnections
+			await mcpHub.refreshAllConnections()
+
+			// Verify configuration was reloaded
+			const servers = mcpHub.getServers()
+			expect(servers).toHaveLength(2)
+			expect(servers.find((s) => s.name === "new-server")).toBeDefined()
+			expect(servers.find((s) => s.name === "test-server")).toBeDefined()
 		})
 	})
 })
