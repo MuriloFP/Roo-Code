@@ -3,8 +3,18 @@
 import { ExtensionContext } from "vscode"
 
 import type { ProviderSettings } from "@roo-code/types"
+import { TelemetryService } from "@roo-code/telemetry"
 
 import { ProviderSettingsManager, ProviderProfiles } from "../ProviderSettingsManager"
+
+// Mock TelemetryService
+vi.mock("@roo-code/telemetry", () => ({
+	TelemetryService: {
+		instance: {
+			captureSchemaValidationError: vi.fn(),
+		},
+	},
+}))
 
 // Mock VSCode ExtensionContext
 const mockSecrets = {
@@ -144,12 +154,11 @@ describe("ProviderSettingsManager", () => {
 			expect(storedConfig.apiConfigs.existing.rateLimitSeconds).toEqual(43)
 		})
 
-		it("should throw error if secrets storage fails", async () => {
+		it("should handle secrets storage failure gracefully", async () => {
 			mockSecrets.get.mockRejectedValue(new Error("Storage failed"))
 
-			await expect(providerSettingsManager.initialize()).rejects.toThrow(
-				"Failed to initialize config: Error: Failed to read provider profiles from secrets: Error: Storage failed",
-			)
+			// Should not throw, but handle gracefully
+			await expect(providerSettingsManager.initialize()).resolves.not.toThrow()
 		})
 	})
 
@@ -205,12 +214,14 @@ describe("ProviderSettingsManager", () => {
 			expect(configs).toEqual([])
 		})
 
-		it("should throw error if reading from secrets fails", async () => {
+		it("should return default profiles if reading from secrets fails", async () => {
 			mockSecrets.get.mockRejectedValue(new Error("Read failed"))
 
-			await expect(providerSettingsManager.listConfig()).rejects.toThrow(
-				"Failed to list configs: Error: Failed to read provider profiles from secrets: Error: Read failed",
-			)
+			const configs = await providerSettingsManager.listConfig()
+
+			// Should return default profile
+			expect(configs).toHaveLength(1)
+			expect(configs[0].name).toBe("default")
 		})
 	})
 
@@ -585,11 +596,162 @@ describe("ProviderSettingsManager", () => {
 			expect(hasConfig).toBe(false)
 		})
 
-		it("should throw error if secrets storage fails", async () => {
+		it("should return false if secrets storage fails", async () => {
 			mockSecrets.get.mockRejectedValue(new Error("Storage failed"))
 
-			await expect(providerSettingsManager.hasConfig("test")).rejects.toThrow(
-				"Failed to check config existence: Error: Failed to read provider profiles from secrets: Error: Storage failed",
+			// Should return false for non-existent config when storage fails
+			const result = await providerSettingsManager.hasConfig("test")
+			expect(result).toBe(false)
+		})
+	})
+
+	describe("load error handling", () => {
+		it("should return default profiles when JSON parsing fails", async () => {
+			// Mock invalid JSON in secrets
+			mockSecrets.get.mockResolvedValue("invalid json {")
+
+			const manager = new ProviderSettingsManager(mockContext)
+			const profiles = await manager.listConfig()
+
+			// Should return default profile
+			expect(profiles).toHaveLength(1)
+			expect(profiles[0].name).toBe("default")
+
+			// Should clear the corrupted secret
+			expect(mockSecrets.delete).toHaveBeenCalledWith(expect.stringContaining("api_config"))
+		})
+
+		it("should return default profiles when schema validation fails", async () => {
+			// Mock valid JSON but invalid schema
+			mockSecrets.get.mockResolvedValue(
+				JSON.stringify({
+					invalidField: "value",
+				}),
+			)
+
+			const manager = new ProviderSettingsManager(mockContext)
+			const profiles = await manager.listConfig()
+
+			// Should return default profile
+			expect(profiles).toHaveLength(1)
+			expect(profiles[0].name).toBe("default")
+
+			// Should clear the invalid secret
+			expect(mockSecrets.delete).toHaveBeenCalledWith(expect.stringContaining("api_config"))
+		})
+
+		it("should handle secrets.delete failure gracefully", async () => {
+			// Mock invalid JSON and delete failure
+			mockSecrets.get.mockResolvedValue("invalid json")
+			mockSecrets.delete.mockRejectedValue(new Error("Delete failed"))
+
+			const manager = new ProviderSettingsManager(mockContext)
+
+			// Should not throw, should return defaults
+			const profiles = await manager.listConfig()
+			expect(profiles).toHaveLength(1)
+			expect(profiles[0].name).toBe("default")
+		})
+
+		it("should handle corrupted JSON with unexpected token error", async () => {
+			// Mock the exact error from the issue
+			mockSecrets.get.mockResolvedValue("C:\\Users\\s")
+
+			const manager = new ProviderSettingsManager(mockContext)
+			const profiles = await manager.listConfig()
+
+			// Should return default profile
+			expect(profiles).toHaveLength(1)
+			expect(profiles[0].name).toBe("default")
+
+			// Should clear the corrupted secret
+			expect(mockSecrets.delete).toHaveBeenCalledWith(expect.stringContaining("api_config"))
+		})
+
+		it("should handle empty string in secrets", async () => {
+			mockSecrets.get.mockResolvedValue("")
+
+			const manager = new ProviderSettingsManager(mockContext)
+			const profiles = await manager.listConfig()
+
+			// Should return default profile
+			expect(profiles).toHaveLength(1)
+			expect(profiles[0].name).toBe("default")
+		})
+
+		it("should handle extremely large invalid JSON gracefully", async () => {
+			// Create a large invalid JSON string
+			const largeInvalidJson = "{" + "a".repeat(10000)
+			mockSecrets.get.mockResolvedValue(largeInvalidJson)
+
+			const manager = new ProviderSettingsManager(mockContext)
+			const profiles = await manager.listConfig()
+
+			// Should return default profile
+			expect(profiles).toHaveLength(1)
+			expect(profiles[0].name).toBe("default")
+
+			// Should clear the corrupted secret
+			expect(mockSecrets.delete).toHaveBeenCalledWith(expect.stringContaining("api_config"))
+		})
+
+		it("should handle nested parsing errors", async () => {
+			// Valid JSON but with nested invalid structure - missing required fields
+			mockSecrets.get.mockResolvedValue(
+				JSON.stringify({
+					// Invalid schema - missing required fields
+					invalidField: "value",
+				}),
+			)
+
+			const manager = new ProviderSettingsManager(mockContext)
+			const profiles = await manager.listConfig()
+
+			// Should return default profile
+			expect(profiles).toHaveLength(1)
+			expect(profiles[0].name).toBe("default")
+
+			// Should clear the invalid secret
+			expect(mockSecrets.delete).toHaveBeenCalledWith(expect.stringContaining("api_config"))
+		})
+
+		it("should recover and allow subsequent operations after error", async () => {
+			// First call returns invalid JSON
+			mockSecrets.get.mockResolvedValueOnce("invalid json")
+
+			const manager = new ProviderSettingsManager(mockContext)
+
+			// First operation should return defaults
+			const profiles1 = await manager.listConfig()
+			expect(profiles1).toHaveLength(1)
+			expect(profiles1[0].name).toBe("default")
+
+			// Reset mock for subsequent calls
+			mockSecrets.get.mockResolvedValue(null)
+
+			// Subsequent operations should work normally
+			const profiles2 = await manager.listConfig()
+			expect(profiles2).toHaveLength(1)
+			expect(profiles2[0].name).toBe("default")
+		})
+
+		it("should capture telemetry for unexpected errors", async () => {
+			// Mock an unexpected error during JSON parsing
+			const unexpectedError = new Error("Unexpected error occurred")
+			mockSecrets.get.mockRejectedValue(unexpectedError)
+
+			const manager = new ProviderSettingsManager(mockContext)
+			const profiles = await manager.listConfig()
+
+			// Should return default profile
+			expect(profiles).toHaveLength(1)
+			expect(profiles[0].name).toBe("default")
+
+			// Should capture telemetry for the unexpected error
+			expect(TelemetryService.instance.captureSchemaValidationError).toHaveBeenCalledWith(
+				expect.objectContaining({
+					schemaName: "ProviderProfiles-Unexpected",
+				}),
 			)
 		})
 	})

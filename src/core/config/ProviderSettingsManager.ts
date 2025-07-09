@@ -447,11 +447,25 @@ export class ProviderSettingsManager {
 				return this.defaultProviderProfiles
 			}
 
+			let parsedContent: any
+			try {
+				parsedContent = JSON.parse(content)
+			} catch (jsonError) {
+				// Log the error for debugging
+				console.error(`[ProviderSettingsManager] JSON parsing error: ${jsonError}`)
+
+				// Clear the corrupted secret
+				await this.context.secrets.delete(this.secretsKey)
+
+				// Return default profiles
+				return this.defaultProviderProfiles
+			}
+
 			const providerProfiles = providerProfilesSchema
 				.extend({
 					apiConfigs: z.record(z.string(), z.any()),
 				})
-				.parse(JSON.parse(content))
+				.parse(parsedContent)
 
 			const apiConfigs = Object.entries(providerProfiles.apiConfigs).reduce(
 				(acc, [key, apiConfig]) => {
@@ -473,9 +487,24 @@ export class ProviderSettingsManager {
 					schemaName: "ProviderProfiles",
 					error,
 				})
+
+				// Clear the invalid secret and return defaults
+				await this.context.secrets.delete(this.secretsKey)
+				return this.defaultProviderProfiles
 			}
 
-			throw new Error(`Failed to read provider profiles from secrets: ${error}`)
+			// For any other unexpected errors, capture telemetry and return defaults
+			// Using SCHEMA_VALIDATION_ERROR event as it's the closest match for configuration errors
+			TelemetryService.instance.captureSchemaValidationError({
+				schemaName: "ProviderProfiles-Unexpected",
+				error:
+					error instanceof Error
+						? Object.assign(new Error(error.message), { format: () => ({ _errors: [error.message] }) })
+						: Object.assign(new Error(String(error)), { format: () => ({ _errors: [String(error)] }) }),
+			} as any)
+
+			console.error(`[ProviderSettingsManager] Unexpected error: ${error}`)
+			return this.defaultProviderProfiles
 		}
 	}
 
