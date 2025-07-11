@@ -2,7 +2,7 @@ import { useCallback, useState, useMemo, useEffect } from "react"
 import { useEvent } from "react-use"
 import { Trans } from "react-i18next"
 import { Checkbox } from "vscrui"
-import { VSCodeLink, VSCodeRadio, VSCodeRadioGroup, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
+import { VSCodeLink, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
 
 import type { ProviderSettings } from "@roo-code/types"
 
@@ -125,21 +125,6 @@ export const LMStudio = ({ apiConfiguration, setApiConfigurationField }: LMStudi
 					</div>
 				</div>
 			)}
-			{lmStudioModels.length > 0 && (
-				<VSCodeRadioGroup
-					value={
-						lmStudioModels.includes(apiConfiguration?.lmStudioModelId || "")
-							? apiConfiguration?.lmStudioModelId
-							: ""
-					}
-					onChange={handleInputChange("lmStudioModelId")}>
-					{lmStudioModels.map((model) => (
-						<VSCodeRadio key={model} value={model} checked={apiConfiguration?.lmStudioModelId === model}>
-							{model}
-						</VSCodeRadio>
-					))}
-				</VSCodeRadioGroup>
-			)}
 			<Checkbox
 				checked={apiConfiguration?.lmStudioSpeculativeDecodingEnabled === true}
 				onChange={(checked) => {
@@ -175,35 +160,6 @@ export const LMStudio = ({ apiConfiguration, setApiConfigurationField }: LMStudi
 							</div>
 						)}
 					</div>
-					{lmStudioModels.length > 0 && (
-						<>
-							<div className="font-medium">{t("settings:providers.lmStudio.selectDraftModel")}</div>
-							<VSCodeRadioGroup
-								value={
-									lmStudioModels.includes(apiConfiguration?.lmStudioDraftModelId || "")
-										? apiConfiguration?.lmStudioDraftModelId
-										: ""
-								}
-								onChange={handleInputChange("lmStudioDraftModelId")}>
-								{lmStudioModels.map((model) => (
-									<VSCodeRadio key={`draft-${model}`} value={model}>
-										{model}
-									</VSCodeRadio>
-								))}
-							</VSCodeRadioGroup>
-							{lmStudioModels.length === 0 && (
-								<div
-									className="text-sm rounded-xs p-2"
-									style={{
-										backgroundColor: "var(--vscode-inputValidation-infoBackground)",
-										border: "1px solid var(--vscode-inputValidation-infoBorder)",
-										color: "var(--vscode-inputValidation-infoForeground)",
-									}}>
-									{t("settings:providers.lmStudio.noModelsFound")}
-								</div>
-							)}
-						</>
-					)}
 				</>
 			)}
 			<div className="text-sm text-vscode-descriptionForeground">
