@@ -938,37 +938,47 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 												<label className="text-sm font-medium">
 													{t("settings:codeIndex.modelLabel")}
 												</label>
-												<VSCodeDropdown
-													value={currentSettings.codebaseIndexEmbedderModelId}
-													onChange={(e: any) =>
+												<VSCodeTextField
+													value={currentSettings.codebaseIndexEmbedderModelId || ""}
+													onInput={(e: any) =>
 														updateSetting("codebaseIndexEmbedderModelId", e.target.value)
 													}
+													placeholder={t("settings:codeIndex.modelPlaceholder")}
 													className={cn("w-full", {
 														"border-red-500": formErrors.codebaseIndexEmbedderModelId,
-													})}>
-													<VSCodeOption value="">
-														{t("settings:codeIndex.selectModel")}
-													</VSCodeOption>
-													{getAvailableModels().map((modelId) => {
-														const model =
-															codebaseIndexModels?.[
-																currentSettings.codebaseIndexEmbedderProvider
-															]?.[modelId]
-														return (
-															<VSCodeOption key={modelId} value={modelId}>
-																{modelId}{" "}
-																{model
-																	? t("settings:codeIndex.modelDimensions", {
-																			dimension: model.dimension,
-																		})
-																	: ""}
-															</VSCodeOption>
-														)
 													})}
-												</VSCodeDropdown>
+												/>
 												{formErrors.codebaseIndexEmbedderModelId && (
 													<p className="text-xs text-vscode-errorForeground mt-1 mb-0">
 														{formErrors.codebaseIndexEmbedderModelId}
+													</p>
+												)}
+											</div>
+
+											<div className="space-y-2">
+												<label className="text-sm font-medium">
+													{t("settings:codeIndex.modelDimensionLabel")}
+												</label>
+												<VSCodeTextField
+													value={
+														currentSettings.codebaseIndexEmbedderModelDimension?.toString() ||
+														""
+													}
+													onInput={(e: any) => {
+														const value = e.target.value
+															? parseInt(e.target.value)
+															: undefined
+														updateSetting("codebaseIndexEmbedderModelDimension", value)
+													}}
+													placeholder={t("settings:codeIndex.modelDimensionPlaceholder")}
+													className={cn("w-full", {
+														"border-red-500":
+															formErrors.codebaseIndexEmbedderModelDimension,
+													})}
+												/>
+												{formErrors.codebaseIndexEmbedderModelDimension && (
+													<p className="text-xs text-vscode-errorForeground mt-1 mb-0">
+														{formErrors.codebaseIndexEmbedderModelDimension}
 													</p>
 												)}
 											</div>
