@@ -48,8 +48,12 @@ describe("CodeIndexConfigManager", () => {
 				isConfigured: false,
 				embedderProvider: "openai",
 				modelId: undefined,
+				modelDimension: undefined,
 				openAiOptions: { openAiNativeApiKey: "" },
-				ollamaOptions: { ollamaBaseUrl: "" },
+				ollamaOptions: { ollamaBaseUrl: undefined },
+				openAiCompatibleOptions: undefined,
+				geminiOptions: undefined,
+				lmStudioOptions: { baseUrl: "http://localhost:1234" },
 				qdrantUrl: "http://localhost:6333",
 				qdrantApiKey: "",
 				searchMinScore: 0.4,
@@ -79,8 +83,76 @@ describe("CodeIndexConfigManager", () => {
 				isConfigured: true,
 				embedderProvider: "openai",
 				modelId: "text-embedding-3-large",
+				modelDimension: undefined,
 				openAiOptions: { openAiNativeApiKey: "test-openai-key" },
-				ollamaOptions: { ollamaBaseUrl: "" },
+				ollamaOptions: { ollamaBaseUrl: undefined },
+				openAiCompatibleOptions: undefined,
+				geminiOptions: undefined,
+				lmStudioOptions: { baseUrl: "http://localhost:1234" },
+				qdrantUrl: "http://qdrant.local",
+				qdrantApiKey: "test-qdrant-key",
+				searchMinScore: 0.4,
+			})
+		})
+
+		it("should load LM Studio configuration from globalState", async () => {
+			const mockGlobalState = {
+				codebaseIndexEnabled: true,
+				codebaseIndexQdrantUrl: "http://qdrant.local",
+				codebaseIndexEmbedderProvider: "lmstudio",
+				codebaseIndexEmbedderBaseUrl: "http://localhost:8080",
+				codebaseIndexEmbedderModelId: "nomic-embed-text-v1.5",
+			}
+			mockContextProxy.getGlobalState.mockReturnValue(mockGlobalState)
+
+			setupSecretMocks({
+				codeIndexQdrantApiKey: "test-qdrant-key",
+			})
+
+			const result = await configManager.loadConfiguration()
+
+			expect(result.currentConfig).toEqual({
+				isConfigured: true,
+				embedderProvider: "lmstudio",
+				modelId: "nomic-embed-text-v1.5",
+				modelDimension: undefined,
+				openAiOptions: { openAiNativeApiKey: "" },
+				ollamaOptions: { ollamaBaseUrl: undefined },
+				openAiCompatibleOptions: undefined,
+				geminiOptions: undefined,
+				lmStudioOptions: { baseUrl: "http://localhost:8080" },
+				qdrantUrl: "http://qdrant.local",
+				qdrantApiKey: "test-qdrant-key",
+				searchMinScore: 0.4,
+			})
+		})
+
+		it("should use default LM Studio URL when not specified", async () => {
+			const mockGlobalState = {
+				codebaseIndexEnabled: true,
+				codebaseIndexQdrantUrl: "http://qdrant.local",
+				codebaseIndexEmbedderProvider: "lmstudio",
+				codebaseIndexEmbedderBaseUrl: "",
+				codebaseIndexEmbedderModelId: "nomic-embed-text-v1.5",
+			}
+			mockContextProxy.getGlobalState.mockReturnValue(mockGlobalState)
+
+			setupSecretMocks({
+				codeIndexQdrantApiKey: "test-qdrant-key",
+			})
+
+			const result = await configManager.loadConfiguration()
+
+			expect(result.currentConfig).toEqual({
+				isConfigured: true,
+				embedderProvider: "lmstudio",
+				modelId: "nomic-embed-text-v1.5",
+				modelDimension: undefined,
+				openAiOptions: { openAiNativeApiKey: "" },
+				ollamaOptions: { ollamaBaseUrl: undefined },
+				openAiCompatibleOptions: undefined,
+				geminiOptions: undefined,
+				lmStudioOptions: { baseUrl: "http://localhost:1234" },
 				qdrantUrl: "http://qdrant.local",
 				qdrantApiKey: "test-qdrant-key",
 				searchMinScore: 0.4,
@@ -112,12 +184,15 @@ describe("CodeIndexConfigManager", () => {
 				isConfigured: true,
 				embedderProvider: "openai-compatible",
 				modelId: "text-embedding-3-large",
+				modelDimension: undefined,
 				openAiOptions: { openAiNativeApiKey: "" },
-				ollamaOptions: { ollamaBaseUrl: "" },
+				ollamaOptions: { ollamaBaseUrl: undefined },
 				openAiCompatibleOptions: {
 					baseUrl: "https://api.example.com/v1",
 					apiKey: "test-openai-compatible-key",
 				},
+				geminiOptions: undefined,
+				lmStudioOptions: { baseUrl: "http://localhost:1234" },
 				qdrantUrl: "http://qdrant.local",
 				qdrantApiKey: "test-qdrant-key",
 				searchMinScore: 0.4,
@@ -151,11 +226,13 @@ describe("CodeIndexConfigManager", () => {
 				modelId: "custom-model",
 				modelDimension: 1024,
 				openAiOptions: { openAiNativeApiKey: "" },
-				ollamaOptions: { ollamaBaseUrl: "" },
+				ollamaOptions: { ollamaBaseUrl: undefined },
 				openAiCompatibleOptions: {
 					baseUrl: "https://api.example.com/v1",
 					apiKey: "test-openai-compatible-key",
 				},
+				geminiOptions: undefined,
+				lmStudioOptions: { baseUrl: "http://localhost:1234" },
 				qdrantUrl: "http://qdrant.local",
 				qdrantApiKey: "test-qdrant-key",
 				searchMinScore: 0.4,
@@ -187,13 +264,15 @@ describe("CodeIndexConfigManager", () => {
 				isConfigured: true,
 				embedderProvider: "openai-compatible",
 				modelId: "custom-model",
+				modelDimension: undefined,
 				openAiOptions: { openAiNativeApiKey: "" },
-				ollamaOptions: { ollamaBaseUrl: "" },
+				ollamaOptions: { ollamaBaseUrl: undefined },
 				openAiCompatibleOptions: {
 					baseUrl: "https://api.example.com/v1",
 					apiKey: "test-openai-compatible-key",
-					// modelDimension is undefined when not set
 				},
+				geminiOptions: undefined,
+				lmStudioOptions: { baseUrl: "http://localhost:1234" },
 				qdrantUrl: "http://qdrant.local",
 				qdrantApiKey: "test-qdrant-key",
 				searchMinScore: 0.4,
@@ -227,12 +306,13 @@ describe("CodeIndexConfigManager", () => {
 				modelId: "custom-model",
 				modelDimension: undefined, // Invalid dimension is converted to undefined
 				openAiOptions: { openAiNativeApiKey: "" },
-				ollamaOptions: { ollamaBaseUrl: "" },
+				ollamaOptions: { ollamaBaseUrl: undefined },
 				openAiCompatibleOptions: {
 					baseUrl: "https://api.example.com/v1",
 					apiKey: "test-openai-compatible-key",
 				},
 				geminiOptions: undefined,
+				lmStudioOptions: { baseUrl: "http://localhost:1234" },
 				qdrantUrl: "http://qdrant.local",
 				qdrantApiKey: "test-qdrant-key",
 				searchMinScore: 0.4,
@@ -260,6 +340,33 @@ describe("CodeIndexConfigManager", () => {
 				codebaseIndexEmbedderProvider: "ollama",
 				codebaseIndexEmbedderBaseUrl: "http://ollama.local",
 				codebaseIndexEmbedderModelId: "nomic-embed-text",
+			})
+
+			const result = await configManager.loadConfiguration()
+			expect(result.requiresRestart).toBe(true)
+		})
+
+		it("should detect restart requirement when changing to LM Studio", async () => {
+			// Initial state - OpenAI configured
+			mockContextProxy.getGlobalState.mockReturnValue({
+				codebaseIndexEnabled: true,
+				codebaseIndexQdrantUrl: "http://qdrant.local",
+				codebaseIndexEmbedderProvider: "openai",
+				codebaseIndexEmbedderModelId: "text-embedding-3-small",
+			})
+			setupSecretMocks({
+				codeIndexOpenAiKey: "test-openai-key",
+			})
+
+			await configManager.loadConfiguration()
+
+			// Change to LM Studio
+			mockContextProxy.getGlobalState.mockReturnValue({
+				codebaseIndexEnabled: true,
+				codebaseIndexQdrantUrl: "http://qdrant.local",
+				codebaseIndexEmbedderProvider: "lmstudio",
+				codebaseIndexEmbedderBaseUrl: "http://localhost:1234",
+				codebaseIndexEmbedderModelId: "nomic-embed-text-v1.5",
 			})
 
 			const result = await configManager.loadConfiguration()
@@ -1171,6 +1278,41 @@ describe("CodeIndexConfigManager", () => {
 			expect(configManager.isFeatureConfigured).toBe(false)
 		})
 
+		it("should validate LM Studio configuration correctly", async () => {
+			mockContextProxy.getGlobalState.mockImplementation((key: string) => {
+				if (key === "codebaseIndexConfig") {
+					return {
+						codebaseIndexEnabled: true,
+						codebaseIndexQdrantUrl: "http://qdrant.local",
+						codebaseIndexEmbedderProvider: "lmstudio",
+						codebaseIndexEmbedderBaseUrl: "http://localhost:1234",
+					}
+				}
+				return undefined
+			})
+
+			await configManager.loadConfiguration()
+			expect(configManager.isFeatureConfigured).toBe(true)
+		})
+
+		it("should return false when LM Studio base URL is missing", async () => {
+			mockContextProxy.getGlobalState.mockImplementation((key: string) => {
+				if (key === "codebaseIndexConfig") {
+					return {
+						codebaseIndexEnabled: true,
+						codebaseIndexQdrantUrl: "http://qdrant.local",
+						codebaseIndexEmbedderProvider: "lmstudio",
+						codebaseIndexEmbedderBaseUrl: "",
+					}
+				}
+				return undefined
+			})
+
+			await configManager.loadConfiguration()
+			// Should still be configured because it uses default URL
+			expect(configManager.isFeatureConfigured).toBe(true)
+		})
+
 		it("should return false when required values are missing", async () => {
 			mockContextProxy.getGlobalState.mockReturnValue({
 				codebaseIndexEnabled: true,
@@ -1204,10 +1346,12 @@ describe("CodeIndexConfigManager", () => {
 				isConfigured: true,
 				embedderProvider: "openai",
 				modelId: "text-embedding-3-large",
+				modelDimension: undefined,
 				openAiOptions: { openAiNativeApiKey: "test-openai-key" },
 				ollamaOptions: { ollamaBaseUrl: undefined },
 				geminiOptions: undefined,
 				openAiCompatibleOptions: undefined,
+				lmStudioOptions: { baseUrl: "http://localhost:1234" },
 				qdrantUrl: "http://qdrant.local",
 				qdrantApiKey: "test-qdrant-key",
 				searchMinScore: 0.4,

@@ -17,6 +17,10 @@
 		"modelNotEmbeddingCapable": "Ollama model is not embedding capable: {{modelId}}",
 		"hostNotFound": "Ollama host not found: {{baseUrl}}"
 	},
+	"lmstudio": {
+		"serviceNotRunning": "LM Studio is not running. Please start LM Studio with Server Mode enabled.",
+		"invalidModel": "The specified embedding model is not loaded in LM Studio"
+	},
 	"scanner": {
 		"unknownErrorProcessingFile": "Unknown error processing file {{filePath}}",
 		"unknownErrorDeletingPoints": "Unknown error deleting points for {{filePath}}",
@@ -46,6 +50,7 @@
 		"ollamaConfigMissing": "Ollama configuration missing for embedder creation",
 		"openAiCompatibleConfigMissing": "OpenAI Compatible configuration missing for embedder creation",
 		"geminiConfigMissing": "Gemini configuration missing for embedder creation",
+		"lmstudioConfigMissing": "LM Studio configuration missing for embedder creation",
 		"invalidEmbedderType": "Invalid embedder type configured: {{embedderProvider}}",
 		"vectorDimensionNotDeterminedOpenAiCompatible": "Could not determine vector dimension for model '{{modelId}}' with provider '{{provider}}'. Please ensure the 'Embedding Dimension' is correctly set in the OpenAI-Compatible provider settings.",
 		"vectorDimensionNotDetermined": "Could not determine vector dimension for model '{{modelId}}' with provider '{{provider}}'. Check model profiles or configuration.",

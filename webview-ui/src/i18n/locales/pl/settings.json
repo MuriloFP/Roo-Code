@@ -45,6 +45,7 @@
 		"openaiProvider": "OpenAI",
 		"ollamaProvider": "Ollama",
 		"geminiProvider": "Gemini",
+		"lmStudioProvider": "LM Studio",
 		"geminiApiKeyLabel": "Klucz API:",
 		"geminiApiKeyPlaceholder": "Wprowadź swój klucz API Gemini",
 		"openaiCompatibleProvider": "Kompatybilny z OpenAI",
@@ -111,7 +112,9 @@
 			"geminiApiKeyRequired": "Wymagany jest klucz API Gemini",
 			"ollamaBaseUrlRequired": "Wymagany jest bazowy adres URL Ollama",
 			"baseUrlRequired": "Wymagany jest bazowy adres URL",
-			"modelDimensionMinValue": "Wymiar modelu musi być większy niż 0"
+			"modelDimensionMinValue": "Wymiar modelu musi być większy niż 0",
+			"lmStudioBaseUrlRequired": "Wymagany jest podstawowy adres URL LM Studio",
+			"invalidLmStudioUrl": "Nieprawidłowy adres URL LM Studio"
 		},
 		"advancedConfigLabel": "Konfiguracja zaawansowana",
 		"searchMinScoreLabel": "Próg wyniku wyszukiwania",
@@ -119,7 +122,9 @@
 		"searchMinScoreResetTooltip": "Zresetuj do wartości domyślnej (0.4)",
 		"searchMaxResultsLabel": "Maksymalna liczba wyników wyszukiwania",
 		"searchMaxResultsDescription": "Maksymalna liczba wyników wyszukiwania zwracanych podczas zapytania do indeksu bazy kodu. Wyższe wartości zapewniają więcej kontekstu, ale mogą zawierać mniej istotne wyniki.",
-		"resetToDefault": "Przywróć domyślne"
+		"resetToDefault": "Przywróć domyślne",
+		"lmStudioBaseUrlLabel": "Podstawowy adres URL LM Studio",
+		"lmStudioUrlPlaceholder": "http://localhost:1234/v1"
 	},
 	"autoApprove": {
 		"description": "Pozwól Roo na automatyczne wykonywanie operacji bez wymagania zatwierdzenia. Włącz te ustawienia tylko jeśli w pełni ufasz AI i rozumiesz związane z tym zagrożenia bezpieczeństwa.",

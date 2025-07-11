@@ -50,6 +50,7 @@
 		"openaiProvider": "OpenAI",
 		"ollamaProvider": "Ollama",
 		"geminiProvider": "Gemini",
+		"lmStudioProvider": "LM Studio",
 		"geminiApiKeyLabel": "API Key:",
 		"geminiApiKeyPlaceholder": "Enter your Gemini API key",
 		"openaiCompatibleProvider": "OpenAI Compatible",
@@ -68,6 +69,7 @@
 		"selectModelPlaceholder": "Select model",
 		"ollamaUrlLabel": "Ollama URL:",
 		"ollamaBaseUrlLabel": "Ollama Base URL",
+		"lmStudioBaseUrlLabel": "LM Studio Base URL",
 		"qdrantUrlLabel": "Qdrant URL",
 		"qdrantKeyLabel": "Qdrant Key:",
 		"qdrantApiKeyLabel": "Qdrant API Key",
@@ -91,6 +93,7 @@
 		},
 		"ollamaUrlPlaceholder": "http://localhost:11434",
 		"openAiCompatibleBaseUrlPlaceholder": "https://api.example.com",
+		"lmStudioUrlPlaceholder": "http://localhost:1234/v1",
 		"modelDimensionPlaceholder": "1536",
 		"qdrantUrlPlaceholder": "http://localhost:6333",
 		"saveError": "Failed to save settings",
@@ -117,6 +120,8 @@
 			"modelDimensionRequired": "Model dimension is required",
 			"geminiApiKeyRequired": "Gemini API key is required",
 			"ollamaBaseUrlRequired": "Ollama base URL is required",
+			"lmStudioBaseUrlRequired": "LM Studio base URL is required",
+			"invalidLmStudioUrl": "Invalid LM Studio URL",
 			"baseUrlRequired": "Base URL is required",
 			"modelDimensionMinValue": "Model dimension must be greater than 0"
 		}

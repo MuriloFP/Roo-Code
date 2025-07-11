@@ -50,6 +50,11 @@
 		"vectorDimensionNotDeterminedOpenAiCompatible": "Nie można określić wymiaru wektora dla modelu '{{modelId}}' z dostawcą '{{provider}}'. Upewnij się, że 'Wymiar osadzania' jest poprawnie ustawiony w ustawieniach dostawcy kompatybilnego z OpenAI.",
 		"vectorDimensionNotDetermined": "Nie można określić wymiaru wektora dla modelu '{{modelId}}' z dostawcą '{{provider}}'. Sprawdź profile modelu lub konfigurację.",
 		"qdrantUrlMissing": "Brak adresu URL Qdrant do utworzenia magazynu wektorów",
-		"codeIndexingNotConfigured": "Nie można utworzyć usług: Indeksowanie kodu nie jest poprawnie skonfigurowane"
+		"codeIndexingNotConfigured": "Nie można utworzyć usług: Indeksowanie kodu nie jest poprawnie skonfigurowane",
+		"lmstudioConfigMissing": "Brak konfiguracji LM Studio do utworzenia embeddera"
+	},
+	"lmstudio": {
+		"serviceNotRunning": "LM Studio nie jest uruchomione. Uruchom LM Studio z włączonym trybem serwera.",
+		"invalidModel": "Określony model osadzania nie jest załadowany w LM Studio"
 	}
 }

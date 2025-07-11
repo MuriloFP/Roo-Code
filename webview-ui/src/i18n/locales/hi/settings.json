@@ -45,6 +45,7 @@
 		"openaiProvider": "OpenAI",
 		"ollamaProvider": "Ollama",
 		"geminiProvider": "Gemini",
+		"lmStudioProvider": "एलएम स्टूडियो",
 		"geminiApiKeyLabel": "API कुंजी:",
 		"geminiApiKeyPlaceholder": "अपना जेमिनी एपीआई कुंजी दर्ज करें",
 		"openaiCompatibleProvider": "OpenAI संगत",
@@ -111,7 +112,9 @@
 			"geminiApiKeyRequired": "Gemini API कुंजी आवश्यक है",
 			"ollamaBaseUrlRequired": "Ollama आधार URL आवश्यक है",
 			"baseUrlRequired": "आधार URL आवश्यक है",
-			"modelDimensionMinValue": "मॉडल आयाम 0 से बड़ा होना चाहिए"
+			"modelDimensionMinValue": "मॉडल आयाम 0 से बड़ा होना चाहिए",
+			"lmStudioBaseUrlRequired": "एलएम स्टूडियो बेस यूआरएल आवश्यक है",
+			"invalidLmStudioUrl": "अमान्य एलएम स्टूडियो यूआरएल"
 		},
 		"advancedConfigLabel": "उन्नत कॉन्फ़िगरेशन",
 		"searchMinScoreLabel": "खोज स्कोर थ्रेसहोल्ड",
@@ -119,7 +122,9 @@
 		"searchMinScoreResetTooltip": "डिफ़ॉल्ट मान पर रीसेट करें (0.4)",
 		"searchMaxResultsLabel": "अधिकतम खोज परिणाम",
 		"searchMaxResultsDescription": "कोडबेस इंडेक्स को क्वेरी करते समय वापस करने के लिए खोज परिणामों की अधिकतम संख्या। उच्च मान अधिक संदर्भ प्रदान करते हैं लेकिन कम प्रासंगिक परिणाम शामिल कर सकते हैं।",
-		"resetToDefault": "डिफ़ॉल्ट पर रीसेट करें"
+		"resetToDefault": "डिफ़ॉल्ट पर रीसेट करें",
+		"lmStudioBaseUrlLabel": "एलएम स्टूडियो बेस यूआरएल",
+		"lmStudioUrlPlaceholder": "http://localhost:1234/v1"
 	},
 	"autoApprove": {
 		"description": "Roo को अनुमोदन की आवश्यकता के बिना स्वचालित रूप से ऑपरेशन करने की अनुमति दें। इन सेटिंग्स को केवल तभी सक्षम करें जब आप AI पर पूरी तरह से भरोसा करते हों और संबंधित सुरक्षा जोखिमों को समझते हों।",

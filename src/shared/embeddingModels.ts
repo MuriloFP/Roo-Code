@@ -2,7 +2,7 @@
  * Defines profiles for different embedding models, including their dimensions.
  */
 
-export type EmbedderProvider = "openai" | "ollama" | "openai-compatible" | "gemini" // Add other providers as needed
+export type EmbedderProvider = "openai" | "ollama" | "openai-compatible" | "gemini" | "lmstudio" // Add other providers as needed
 
 export interface EmbeddingModelProfile {
 	dimension: number
@@ -48,6 +48,13 @@ export const EMBEDDING_MODEL_PROFILES: EmbeddingModelProfiles = {
 	},
 	gemini: {
 		"text-embedding-004": { dimension: 768 },
+	},
+	lmstudio: {
+		// Common embedding models that work with LM Studio
+		"nomic-embed-text-v1.5": { dimension: 768, scoreThreshold: 0.4 },
+		"text-embedding-3-small": { dimension: 1536, scoreThreshold: 0.4 },
+		"text-embedding-3-large": { dimension: 3072, scoreThreshold: 0.4 },
+		"all-MiniLM-L6-v2": { dimension: 384, scoreThreshold: 0.4 },
 	},
 }
 
@@ -135,6 +142,9 @@ export function getDefaultModelId(provider: EmbedderProvider): string {
 
 		case "gemini":
 			return "text-embedding-004"
+
+		case "lmstudio":
+			return "nomic-embed-text-v1.5"
 
 		default:
 			// Fallback for unknown providers

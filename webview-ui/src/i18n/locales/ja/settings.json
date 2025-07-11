@@ -45,6 +45,7 @@
 		"openaiProvider": "OpenAI",
 		"ollamaProvider": "Ollama",
 		"geminiProvider": "Gemini",
+		"lmStudioProvider": "LM Studio",
 		"geminiApiKeyLabel": "APIキー：",
 		"geminiApiKeyPlaceholder": "Gemini APIキーを入力してください",
 		"openaiCompatibleProvider": "OpenAI互換",
@@ -111,7 +112,9 @@
 			"geminiApiKeyRequired": "Gemini APIキーが必要です",
 			"ollamaBaseUrlRequired": "OllamaのベースURLが必要です",
 			"baseUrlRequired": "ベースURLが必要です",
-			"modelDimensionMinValue": "モデルの次元は0より大きくなければなりません"
+			"modelDimensionMinValue": "モデルの次元は0より大きくなければなりません",
+			"lmStudioBaseUrlRequired": "LM Studio のベース URL が必要です",
+			"invalidLmStudioUrl": "無効なLM Studio URL"
 		},
 		"advancedConfigLabel": "詳細設定",
 		"searchMinScoreLabel": "検索スコアのしきい値",
@@ -119,7 +122,9 @@
 		"searchMinScoreResetTooltip": "デフォルト値（0.4）にリセット",
 		"searchMaxResultsLabel": "最大検索結果数",
 		"searchMaxResultsDescription": "コードベースインデックスをクエリする際に返される検索結果の最大数。値を高くするとより多くのコンテキストが提供されますが、関連性の低い結果が含まれる可能性があります。",
-		"resetToDefault": "デフォルトにリセット"
+		"resetToDefault": "デフォルトにリセット",
+		"lmStudioBaseUrlLabel": "LM Studio ベースURL",
+		"lmStudioUrlPlaceholder": "http://localhost:1234/v1"
 	},
 	"autoApprove": {
 		"description": "Rooが承認なしで自動的に操作を実行できるようにします。AIを完全に信頼し、関連するセキュリティリスクを理解している場合にのみ、これらの設定を有効にしてください。",

@@ -44,6 +44,7 @@ import { CODEBASE_INDEX_DEFAULTS } from "@roo-code/types"
 // Default URLs for providers
 const DEFAULT_QDRANT_URL = "http://localhost:6333"
 const DEFAULT_OLLAMA_URL = "http://localhost:11434"
+const DEFAULT_LMSTUDIO_URL = "http://localhost:1234/v1"
 
 interface CodeIndexPopoverProps {
 	children: React.ReactNode
@@ -115,6 +116,17 @@ const createValidationSchema = (provider: EmbedderProvider, t: any) => {
 		case "gemini":
 			return baseSchema.extend({
 				codebaseIndexGeminiApiKey: z.string().min(1, t("settings:codeIndex.validation.geminiApiKeyRequired")),
+				codebaseIndexEmbedderModelId: z
+					.string()
+					.min(1, t("settings:codeIndex.validation.modelSelectionRequired")),
+			})
+
+		case "lmstudio":
+			return baseSchema.extend({
+				codebaseIndexEmbedderBaseUrl: z
+					.string()
+					.min(1, t("settings:codeIndex.validation.lmStudioBaseUrlRequired"))
+					.url(t("settings:codeIndex.validation.invalidLmStudioUrl")),
 				codebaseIndexEmbedderModelId: z
 					.string()
 					.min(1, t("settings:codeIndex.validation.modelSelectionRequired")),
@@ -569,6 +581,9 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 												<SelectItem value="gemini">
 													{t("settings:codeIndex.geminiProvider")}
 												</SelectItem>
+												<SelectItem value="lmstudio">
+													{t("settings:codeIndex.lmStudioProvider")}
+												</SelectItem>
 											</SelectContent>
 										</Select>
 									</div>
@@ -841,6 +856,80 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 												{formErrors.codebaseIndexGeminiApiKey && (
 													<p className="text-xs text-vscode-errorForeground mt-1 mb-0">
 														{formErrors.codebaseIndexGeminiApiKey}
+													</p>
+												)}
+											</div>
+
+											<div className="space-y-2">
+												<label className="text-sm font-medium">
+													{t("settings:codeIndex.modelLabel")}
+												</label>
+												<VSCodeDropdown
+													value={currentSettings.codebaseIndexEmbedderModelId}
+													onChange={(e: any) =>
+														updateSetting("codebaseIndexEmbedderModelId", e.target.value)
+													}
+													className={cn("w-full", {
+														"border-red-500": formErrors.codebaseIndexEmbedderModelId,
+													})}>
+													<VSCodeOption value="">
+														{t("settings:codeIndex.selectModel")}
+													</VSCodeOption>
+													{getAvailableModels().map((modelId) => {
+														const model =
+															codebaseIndexModels?.[
+																currentSettings.codebaseIndexEmbedderProvider
+															]?.[modelId]
+														return (
+															<VSCodeOption key={modelId} value={modelId}>
+																{modelId}{" "}
+																{model
+																	? t("settings:codeIndex.modelDimensions", {
+																			dimension: model.dimension,
+																		})
+																	: ""}
+															</VSCodeOption>
+														)
+													})}
+												</VSCodeDropdown>
+												{formErrors.codebaseIndexEmbedderModelId && (
+													<p className="text-xs text-vscode-errorForeground mt-1 mb-0">
+														{formErrors.codebaseIndexEmbedderModelId}
+													</p>
+												)}
+											</div>
+										</>
+									)}
+
+									{currentSettings.codebaseIndexEmbedderProvider === "lmstudio" && (
+										<>
+											<div className="space-y-2">
+												<label className="text-sm font-medium">
+													{t("settings:codeIndex.lmStudioBaseUrlLabel")}
+												</label>
+												<VSCodeTextField
+													value={currentSettings.codebaseIndexEmbedderBaseUrl || ""}
+													onInput={(e: any) =>
+														updateSetting("codebaseIndexEmbedderBaseUrl", e.target.value)
+													}
+													onBlur={(e: any) => {
+														// Set default LM Studio URL if field is empty
+														if (!e.target.value.trim()) {
+															e.target.value = DEFAULT_LMSTUDIO_URL
+															updateSetting(
+																"codebaseIndexEmbedderBaseUrl",
+																DEFAULT_LMSTUDIO_URL,
+															)
+														}
+													}}
+													placeholder={t("settings:codeIndex.lmStudioUrlPlaceholder")}
+													className={cn("w-full", {
+														"border-red-500": formErrors.codebaseIndexLmStudioBaseUrl,
+													})}
+												/>
+												{formErrors.codebaseIndexLmStudioBaseUrl && (
+													<p className="text-xs text-vscode-errorForeground mt-1 mb-0">
+														{formErrors.codebaseIndexLmStudioBaseUrl}
 													</p>
 												)}
 											</div>

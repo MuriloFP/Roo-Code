@@ -50,6 +50,11 @@
 		"vectorDimensionNotDeterminedOpenAiCompatible": "Không thể xác định kích thước vector cho mô hình '{{modelId}}' với nhà cung cấp '{{provider}}'. Hãy đảm bảo 'Kích thước Embedding' được cài đặt đúng trong cài đặt nhà cung cấp tương thích OpenAI.",
 		"vectorDimensionNotDetermined": "Không thể xác định kích thước vector cho mô hình '{{modelId}}' với nhà cung cấp '{{provider}}'. Kiểm tra hồ sơ mô hình hoặc cấu hình.",
 		"qdrantUrlMissing": "Thiếu URL Qdrant để tạo kho lưu trữ vector",
-		"codeIndexingNotConfigured": "Không thể tạo dịch vụ: Lập chỉ mục mã không được cấu hình đúng cách"
+		"codeIndexingNotConfigured": "Không thể tạo dịch vụ: Lập chỉ mục mã không được cấu hình đúng cách",
+		"lmstudioConfigMissing": "Thiếu cấu hình LM Studio để tạo trình nhúng"
+	},
+	"lmstudio": {
+		"serviceNotRunning": "LM Studio không chạy. Vui lòng khởi động LM Studio với Chế độ máy chủ được bật.",
+		"invalidModel": "Mô hình nhúng được chỉ định không được tải trong LM Studio"
 	}
 }

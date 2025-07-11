@@ -45,6 +45,7 @@
 		"openaiProvider": "OpenAI",
 		"ollamaProvider": "Ollama",
 		"geminiProvider": "Gemini",
+		"lmStudioProvider": "LM Studio",
 		"geminiApiKeyLabel": "API-sleutel:",
 		"geminiApiKeyPlaceholder": "Voer uw Gemini API-sleutel in",
 		"openaiCompatibleProvider": "OpenAI-compatibel",
@@ -111,7 +112,9 @@
 			"geminiApiKeyRequired": "Gemini API-sleutel is vereist",
 			"ollamaBaseUrlRequired": "Ollama basis-URL is vereist",
 			"baseUrlRequired": "Basis-URL is vereist",
-			"modelDimensionMinValue": "Modelafmeting moet groter zijn dan 0"
+			"modelDimensionMinValue": "Modelafmeting moet groter zijn dan 0",
+			"lmStudioBaseUrlRequired": "LM Studio basis-URL is vereist",
+			"invalidLmStudioUrl": "Ongeldige LM Studio-URL"
 		},
 		"advancedConfigLabel": "Geavanceerde configuratie",
 		"searchMinScoreLabel": "Zoekscore drempel",
@@ -119,7 +122,9 @@
 		"searchMinScoreResetTooltip": "Reset naar standaardwaarde (0.4)",
 		"searchMaxResultsLabel": "Maximum Zoekresultaten",
 		"searchMaxResultsDescription": "Maximum aantal zoekresultaten dat wordt geretourneerd bij het doorzoeken van de codebase-index. Hogere waarden bieden meer context maar kunnen minder relevante resultaten bevatten.",
-		"resetToDefault": "Reset naar standaard"
+		"resetToDefault": "Reset naar standaard",
+		"lmStudioBaseUrlLabel": "LM Studio basis-URL",
+		"lmStudioUrlPlaceholder": "http://localhost:1234/v1"
 	},
 	"autoApprove": {
 		"description": "Sta Roo toe om automatisch handelingen uit te voeren zonder goedkeuring. Schakel deze instellingen alleen in als je de AI volledig vertrouwt en de bijbehorende beveiligingsrisico's begrijpt.",

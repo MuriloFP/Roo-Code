@@ -50,6 +50,11 @@
 		"vectorDimensionNotDeterminedOpenAiCompatible": "Konnte die Vektordimension für Modell '{{modelId}}' mit Anbieter '{{provider}}' nicht bestimmen. Stelle sicher, dass die 'Embedding-Dimension' in den OpenAI-kompatiblen Anbietereinstellungen korrekt eingestellt ist.",
 		"vectorDimensionNotDetermined": "Konnte die Vektordimension für Modell '{{modelId}}' mit Anbieter '{{provider}}' nicht bestimmen. Überprüfe die Modellprofile oder Konfiguration.",
 		"qdrantUrlMissing": "Qdrant-URL fehlt für die Erstellung des Vektorspeichers",
-		"codeIndexingNotConfigured": "Kann keine Dienste erstellen: Code-Indizierung ist nicht richtig konfiguriert"
+		"codeIndexingNotConfigured": "Kann keine Dienste erstellen: Code-Indizierung ist nicht richtig konfiguriert",
+		"lmstudioConfigMissing": "LM Studio-Konfiguration für die Erstellung des Embedders fehlt"
+	},
+	"lmstudio": {
+		"serviceNotRunning": "LM Studio läuft nicht. Bitte starte LM Studio mit aktiviertem Server-Modus.",
+		"invalidModel": "Das angegebene Einbettungsmodell ist nicht in LM Studio geladen"
 	}
 }

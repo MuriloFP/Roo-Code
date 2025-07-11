@@ -45,6 +45,7 @@
 		"openaiProvider": "OpenAI",
 		"ollamaProvider": "Ollama",
 		"geminiProvider": "Gemini",
+		"lmStudioProvider": "LM Studio",
 		"geminiApiKeyLabel": "Chave de API:",
 		"geminiApiKeyPlaceholder": "Digite sua chave de API do Gemini",
 		"openaiCompatibleProvider": "Compatível com OpenAI",
@@ -111,7 +112,9 @@
 			"geminiApiKeyRequired": "A chave de API do Gemini é obrigatória",
 			"ollamaBaseUrlRequired": "A URL base do Ollama é obrigatória",
 			"baseUrlRequired": "A URL base é obrigatória",
-			"modelDimensionMinValue": "A dimensão do modelo deve ser maior que 0"
+			"modelDimensionMinValue": "A dimensão do modelo deve ser maior que 0",
+			"lmStudioBaseUrlRequired": "A URL base do LM Studio é obrigatória",
+			"invalidLmStudioUrl": "URL do LM Studio inválida"
 		},
 		"advancedConfigLabel": "Configuração Avançada",
 		"searchMinScoreLabel": "Limite de pontuação de busca",
@@ -119,7 +122,9 @@
 		"searchMinScoreResetTooltip": "Redefinir para o valor padrão (0.4)",
 		"searchMaxResultsLabel": "Resultados máximos de busca",
 		"searchMaxResultsDescription": "Número máximo de resultados de busca a retornar ao consultar o índice de código. Valores mais altos fornecem mais contexto, mas podem incluir resultados menos relevantes.",
-		"resetToDefault": "Redefinir para o padrão"
+		"resetToDefault": "Redefinir para o padrão",
+		"lmStudioBaseUrlLabel": "URL base do LM Studio",
+		"lmStudioUrlPlaceholder": "http://localhost:1234/v1"
 	},
 	"autoApprove": {
 		"description": "Permitir que o Roo realize operações automaticamente sem exigir aprovação. Ative essas configurações apenas se confiar totalmente na IA e compreender os riscos de segurança associados.",

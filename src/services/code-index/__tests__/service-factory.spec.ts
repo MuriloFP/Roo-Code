@@ -4,6 +4,7 @@ import { OpenAiEmbedder } from "../embedders/openai"
 import { CodeIndexOllamaEmbedder } from "../embedders/ollama"
 import { OpenAICompatibleEmbedder } from "../embedders/openai-compatible"
 import { GeminiEmbedder } from "../embedders/gemini"
+import { LmStudioEmbedder } from "../embedders/lmstudio"
 import { QdrantVectorStore } from "../vector-store/qdrant-client"
 
 // Mock the embedders and vector store
@@ -11,6 +12,7 @@ vitest.mock("../embedders/openai")
 vitest.mock("../embedders/ollama")
 vitest.mock("../embedders/openai-compatible")
 vitest.mock("../embedders/gemini")
+vitest.mock("../embedders/lmstudio")
 vitest.mock("../vector-store/qdrant-client")
 
 // Mock the embedding models module
@@ -23,6 +25,7 @@ const MockedOpenAiEmbedder = OpenAiEmbedder as MockedClass<typeof OpenAiEmbedder
 const MockedCodeIndexOllamaEmbedder = CodeIndexOllamaEmbedder as MockedClass<typeof CodeIndexOllamaEmbedder>
 const MockedOpenAICompatibleEmbedder = OpenAICompatibleEmbedder as MockedClass<typeof OpenAICompatibleEmbedder>
 const MockedGeminiEmbedder = GeminiEmbedder as MockedClass<typeof GeminiEmbedder>
+const MockedLmStudioEmbedder = LmStudioEmbedder as MockedClass<typeof LmStudioEmbedder>
 const MockedQdrantVectorStore = QdrantVectorStore as MockedClass<typeof QdrantVectorStore>
 
 // Import the mocked functions
@@ -299,6 +302,76 @@ describe("CodeIndexServiceFactory", () => {
 			expect(() => factory.createEmbedder()).toThrow("serviceFactory.geminiConfigMissing")
 		})
 
+		it("should create LmStudioEmbedder when using LM Studio provider", () => {
+			// Arrange
+			const testModelId = "nomic-embed-text"
+			const testConfig = {
+				embedderProvider: "lmstudio",
+				modelId: testModelId,
+				lmStudioOptions: {
+					baseUrl: "http://localhost:1234",
+				},
+			}
+			mockConfigManager.getConfig.mockReturnValue(testConfig as any)
+
+			// Act
+			factory.createEmbedder()
+
+			// Assert
+			expect(MockedLmStudioEmbedder).toHaveBeenCalledWith("http://localhost:1234", testModelId)
+		})
+
+		it("should create LmStudioEmbedder with default base URL when not provided", () => {
+			// Arrange
+			const testModelId = "nomic-embed-text"
+			const testConfig = {
+				embedderProvider: "lmstudio",
+				modelId: testModelId,
+				lmStudioOptions: {},
+			}
+			mockConfigManager.getConfig.mockReturnValue(testConfig as any)
+
+			// Act
+			factory.createEmbedder()
+
+			// Assert
+			expect(MockedLmStudioEmbedder).toHaveBeenCalledWith("http://localhost:1234", testModelId)
+		})
+
+		it("should handle undefined model ID for LM Studio embedder", () => {
+			// Arrange
+			const testConfig = {
+				embedderProvider: "lmstudio",
+				modelId: undefined,
+				lmStudioOptions: {
+					baseUrl: "http://localhost:1234",
+				},
+			}
+			mockConfigManager.getConfig.mockReturnValue(testConfig as any)
+
+			// Act
+			factory.createEmbedder()
+
+			// Assert
+			expect(MockedLmStudioEmbedder).toHaveBeenCalledWith("http://localhost:1234", undefined)
+		})
+
+		it("should create LmStudioEmbedder when options are missing", () => {
+			// Arrange
+			const testConfig = {
+				embedderProvider: "lmstudio",
+				modelId: "nomic-embed-text",
+				lmStudioOptions: undefined,
+			}
+			mockConfigManager.getConfig.mockReturnValue(testConfig as any)
+
+			// Act
+			factory.createEmbedder()
+
+			// Assert
+			expect(MockedLmStudioEmbedder).toHaveBeenCalledWith("http://localhost:1234", "nomic-embed-text")
+		})
+
 		it("should throw error for invalid embedder provider", () => {
 			// Arrange
 			const testConfig = {
@@ -522,6 +595,31 @@ describe("CodeIndexServiceFactory", () => {
 			)
 		})
 
+		it("should use config.modelId for LM Studio provider", () => {
+			// Arrange
+			const testModelId = "nomic-embed-text"
+			const testConfig = {
+				embedderProvider: "lmstudio",
+				modelId: testModelId,
+				qdrantUrl: "http://localhost:6333",
+				qdrantApiKey: "test-key",
+			}
+			mockConfigManager.getConfig.mockReturnValue(testConfig as any)
+			mockGetModelDimension.mockReturnValue(768)
+
+			// Act
+			factory.createVectorStore()
+
+			// Assert
+			expect(mockGetModelDimension).toHaveBeenCalledWith("lmstudio", testModelId)
+			expect(MockedQdrantVectorStore).toHaveBeenCalledWith(
+				"/test/workspace",
+				"http://localhost:6333",
+				768,
+				"test-key",
+			)
+		})
+
 		it("should use default model when config.modelId is undefined", () => {
 			// Arrange
 			const testConfig = {
@@ -690,6 +788,28 @@ describe("CodeIndexServiceFactory", () => {
 			}
 			mockConfigManager.getConfig.mockReturnValue(testConfig as any)
 			MockedGeminiEmbedder.mockImplementation(() => mockEmbedderInstance)
+			mockEmbedderInstance.validateConfiguration.mockResolvedValue({ valid: true })
+
+			// Act
+			const embedder = factory.createEmbedder()
+			const result = await factory.validateEmbedder(embedder)
+
+			// Assert
+			expect(result).toEqual({ valid: true })
+			expect(mockEmbedderInstance.validateConfiguration).toHaveBeenCalled()
+		})
+
+		it("should validate LM Studio embedder successfully", async () => {
+			// Arrange
+			const testConfig = {
+				embedderProvider: "lmstudio",
+				modelId: "nomic-embed-text",
+				lmStudioOptions: {
+					baseUrl: "http://localhost:1234",
+				},
+			}
+			mockConfigManager.getConfig.mockReturnValue(testConfig as any)
+			MockedLmStudioEmbedder.mockImplementation(() => mockEmbedderInstance)
 			mockEmbedderInstance.validateConfiguration.mockResolvedValue({ valid: true })
 
 			// Act

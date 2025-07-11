@@ -50,6 +50,11 @@
 		"vectorDimensionNotDeterminedOpenAiCompatible": "No se pudo determinar la dimensión del vector para el modelo '{{modelId}}' con el proveedor '{{provider}}'. Asegúrate de que la 'Dimensión de incrustación' esté configurada correctamente en los ajustes del proveedor compatible con OpenAI.",
 		"vectorDimensionNotDetermined": "No se pudo determinar la dimensión del vector para el modelo '{{modelId}}' con el proveedor '{{provider}}'. Verifica los perfiles del modelo o la configuración.",
 		"qdrantUrlMissing": "Falta la URL de Qdrant para crear el almacén de vectores",
-		"codeIndexingNotConfigured": "No se pueden crear servicios: La indexación de código no está configurada correctamente"
+		"codeIndexingNotConfigured": "No se pueden crear servicios: La indexación de código no está configurada correctamente",
+		"lmstudioConfigMissing": "Falta la configuración de LM Studio para la creación del incrustador"
+	},
+	"lmstudio": {
+		"serviceNotRunning": "LM Studio no se está ejecutando. Por favor, inicie LM Studio con el modo de servidor habilitado.",
+		"invalidModel": "El modelo de incrustación especificado no está cargado en LM Studio"
 	}
 }

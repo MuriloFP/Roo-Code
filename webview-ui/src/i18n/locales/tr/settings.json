@@ -45,6 +45,7 @@
 		"openaiProvider": "OpenAI",
 		"ollamaProvider": "Ollama",
 		"geminiProvider": "Gemini",
+		"lmStudioProvider": "LM Studio",
 		"geminiApiKeyLabel": "API Anahtarı:",
 		"geminiApiKeyPlaceholder": "Gemini API anahtarınızı girin",
 		"openaiCompatibleProvider": "OpenAI Uyumlu",
@@ -111,7 +112,9 @@
 			"geminiApiKeyRequired": "Gemini API anahtarı gereklidir",
 			"ollamaBaseUrlRequired": "Ollama temel URL'si gereklidir",
 			"baseUrlRequired": "Temel URL'si gereklidir",
-			"modelDimensionMinValue": "Model boyutu 0'dan büyük olmalıdır"
+			"modelDimensionMinValue": "Model boyutu 0'dan büyük olmalıdır",
+			"lmStudioBaseUrlRequired": "LM Studio temel URL'si gereklidir",
+			"invalidLmStudioUrl": "Geçersiz LM Studio URL'si"
 		},
 		"advancedConfigLabel": "Gelişmiş Yapılandırma",
 		"searchMinScoreLabel": "Arama Skoru Eşiği",
@@ -119,7 +122,9 @@
 		"searchMinScoreResetTooltip": "Varsayılan değere sıfırla (0.4)",
 		"searchMaxResultsLabel": "Maksimum Arama Sonuçları",
 		"searchMaxResultsDescription": "Kod tabanı dizinini sorgularken döndürülecek maksimum arama sonucu sayısı. Daha yüksek değerler daha fazla bağlam sağlar ancak daha az alakalı sonuçlar içerebilir.",
-		"resetToDefault": "Varsayılana sıfırla"
+		"resetToDefault": "Varsayılana sıfırla",
+		"lmStudioBaseUrlLabel": "LM Studio Temel URL'si",
+		"lmStudioUrlPlaceholder": "http://localhost:1234/v1"
 	},
 	"autoApprove": {
 		"description": "Roo'nun onay gerektirmeden otomatik olarak işlemler gerçekleştirmesine izin verin. Bu ayarları yalnızca yapay zekaya tamamen güveniyorsanız ve ilgili güvenlik risklerini anlıyorsanız etkinleştirin.",

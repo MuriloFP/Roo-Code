@@ -3,6 +3,7 @@ import { OpenAiEmbedder } from "./embedders/openai"
 import { CodeIndexOllamaEmbedder } from "./embedders/ollama"
 import { OpenAICompatibleEmbedder } from "./embedders/openai-compatible"
 import { GeminiEmbedder } from "./embedders/gemini"
+import { LmStudioEmbedder } from "./embedders/lmstudio"
 import { EmbedderProvider, getDefaultModelId, getModelDimension } from "../../shared/embeddingModels"
 import { QdrantVectorStore } from "./vector-store/qdrant-client"
 import { codeParser, DirectoryScanner, FileWatcher } from "./processors"
@@ -62,6 +63,9 @@ export class CodeIndexServiceFactory {
 				throw new Error(t("embeddings:serviceFactory.geminiConfigMissing"))
 			}
 			return new GeminiEmbedder(config.geminiOptions.apiKey)
+		} else if (provider === "lmstudio") {
+			const baseUrl = config.lmStudioOptions?.baseUrl || "http://localhost:1234"
+			return new LmStudioEmbedder(baseUrl, config.modelId)
 		}
 
 		throw new Error(

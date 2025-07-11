@@ -50,6 +50,7 @@
 		"openaiProvider": "OpenAI",
 		"ollamaProvider": "Ollama",
 		"geminiProvider": "Gemini",
+		"lmStudioProvider": "LM Studio",
 		"geminiApiKeyLabel": "Clé API :",
 		"geminiApiKeyPlaceholder": "Entrez votre clé API Gemini",
 		"openaiCompatibleProvider": "Compatible OpenAI",
@@ -84,6 +85,7 @@
 		},
 		"ollamaUrlPlaceholder": "http://localhost:11434",
 		"openAiCompatibleBaseUrlPlaceholder": "https://api.example.com",
+		"lmStudioUrlPlaceholder": "http://localhost:1234/v1",
 		"modelDimensionPlaceholder": "1536",
 		"qdrantUrlPlaceholder": "http://localhost:6333",
 		"saveError": "Échec de la sauvegarde des paramètres",
@@ -111,7 +113,9 @@
 			"geminiApiKeyRequired": "La clé API Gemini est requise",
 			"ollamaBaseUrlRequired": "L'URL de base Ollama est requise",
 			"baseUrlRequired": "L'URL de base est requise",
-			"modelDimensionMinValue": "La dimension du modèle doit être supérieure à 0"
+			"modelDimensionMinValue": "La dimension du modèle doit être supérieure à 0",
+			"lmStudioBaseUrlRequired": "L'URL de base de LM Studio est requise",
+			"invalidLmStudioUrl": "URL de LM Studio invalide"
 		},
 		"advancedConfigLabel": "Configuration avancée",
 		"searchMinScoreLabel": "Seuil de score de recherche",
@@ -119,7 +123,8 @@
 		"searchMinScoreResetTooltip": "Réinitialiser à la valeur par défaut (0.4)",
 		"searchMaxResultsLabel": "Résultats de recherche maximum",
 		"searchMaxResultsDescription": "Nombre maximum de résultats de recherche à retourner lors de l'interrogation de l'index de code. Des valeurs plus élevées fournissent plus de contexte mais peuvent inclure des résultats moins pertinents.",
-		"resetToDefault": "Réinitialiser par défaut"
+		"resetToDefault": "Réinitialiser par défaut",
+		"lmStudioBaseUrlLabel": "URL de base de LM Studio"
 	},
 	"autoApprove": {
 		"description": "Permettre à Roo d'effectuer automatiquement des opérations sans requérir d'approbation. Activez ces paramètres uniquement si vous faites entièrement confiance à l'IA et que vous comprenez les risques de sécurité associés.",

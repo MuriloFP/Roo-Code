@@ -45,6 +45,7 @@
 		"openaiProvider": "OpenAI",
 		"ollamaProvider": "Ollama",
 		"geminiProvider": "Gemini",
+		"lmStudioProvider": "LM Studio",
 		"geminiApiKeyLabel": "Ключ API:",
 		"geminiApiKeyPlaceholder": "Введите свой API-ключ Gemini",
 		"openaiCompatibleProvider": "OpenAI-совместимый",
@@ -111,7 +112,9 @@
 			"geminiApiKeyRequired": "Требуется ключ API Gemini",
 			"ollamaBaseUrlRequired": "Требуется базовый URL Ollama",
 			"baseUrlRequired": "Требуется базовый URL",
-			"modelDimensionMinValue": "Размерность модели должна быть больше 0"
+			"modelDimensionMinValue": "Размерность модели должна быть больше 0",
+			"lmStudioBaseUrlRequired": "Требуется базовый URL LM Studio",
+			"invalidLmStudioUrl": "Неверный URL LM Studio"
 		},
 		"advancedConfigLabel": "Расширенная конфигурация",
 		"searchMinScoreLabel": "Порог оценки поиска",
@@ -119,7 +122,9 @@
 		"searchMinScoreResetTooltip": "Сбросить к значению по умолчанию (0.4)",
 		"searchMaxResultsLabel": "Максимальное количество результатов поиска",
 		"searchMaxResultsDescription": "Максимальное количество результатов поиска, возвращаемых при запросе индекса кодовой базы. Более высокие значения предоставляют больше контекста, но могут включать менее релевантные результаты.",
-		"resetToDefault": "Сбросить к значению по умолчанию"
+		"resetToDefault": "Сбросить к значению по умолчанию",
+		"lmStudioBaseUrlLabel": "Базовый URL LM Studio",
+		"lmStudioUrlPlaceholder": "http://localhost:1234/v1"
 	},
 	"autoApprove": {
 		"description": "Разрешить Roo автоматически выполнять операции без необходимости одобрения. Включайте эти параметры только если полностью доверяете ИИ и понимаете связанные с этим риски безопасности.",
