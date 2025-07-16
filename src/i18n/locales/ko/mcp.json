@@ -5,7 +5,8 @@
 		"invalid_settings_validation": "잘못된 MCP 설정 형식: {{errorMessages}}",
 		"create_json": ".roo/mcp.json 생성 또는 열기 실패: {{error}}",
 		"failed_update_project": "프로젝트 MCP 서버 업데이트에 실패했습니다",
-		"invalidJsonArgument": "Roo가 유효하지 않은 JSON 인자로 {{toolName}}을(를) 사용하려고 했습니다. 다시 시도 중..."
+		"invalidJsonArgument": "Roo가 유효하지 않은 JSON 인자로 {{toolName}}을(를) 사용하려고 했습니다. 다시 시도 중...",
+		"failed_toggle_resource": "서버 \"{{serverName}}\"의 리소스 \"{{resourceUri}}\"에 대해 항상 허용을 토글하지 못했습니다"
 	},
 	"info": {
 		"server_restarting": "{{serverName}} MCP 서버를 재시작하는 중...",
@@ -18,5 +19,16 @@
 		"refreshing_all": "모든 MCP 서버를 새로 고치는 중...",
 		"all_refreshed": "모든 MCP 서버가 새로 고쳐졌습니다.",
 		"project_config_deleted": "프로젝트 MCP 구성 파일이 삭제되었습니다. 모든 프로젝트 MCP 서버가 연결 해제되었습니다."
+	},
+	"tool": {
+		"alwaysAllow": "항상 허용",
+		"togglePromptInclusion": "프롬프트 포함 토글",
+		"parameters": "파라미터",
+		"noDescription": "설명 없음"
+	},
+	"resource": {
+		"alwaysAllow": "항상 허용",
+		"noDescription": "설명 없음",
+		"returns": "반환"
 	}
 }

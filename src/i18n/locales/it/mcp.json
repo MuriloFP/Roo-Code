@@ -5,7 +5,8 @@
 		"invalid_settings_validation": "Formato delle impostazioni MCP non valido: {{errorMessages}}",
 		"create_json": "Impossibile creare o aprire .roo/mcp.json: {{error}}",
 		"failed_update_project": "Errore durante l'aggiornamento dei server MCP del progetto",
-		"invalidJsonArgument": "Roo ha tentato di usare {{toolName}} con un argomento JSON non valido. Riprovo..."
+		"invalidJsonArgument": "Roo ha tentato di usare {{toolName}} con un argomento JSON non valido. Riprovo...",
+		"failed_toggle_resource": "Impossibile attivare/disattivare l'opzione 'permetti sempre' per la risorsa \"{{resourceUri}}\" sul server \"{{serverName}}\""
 	},
 	"info": {
 		"server_restarting": "Riavvio del server MCP {{serverName}}...",
@@ -18,5 +19,16 @@
 		"refreshing_all": "Aggiornamento di tutti i server MCP...",
 		"all_refreshed": "Tutti i server MCP sono stati aggiornati.",
 		"project_config_deleted": "File di configurazione MCP del progetto eliminato. Tutti i server MCP del progetto sono stati disconnessi."
+	},
+	"tool": {
+		"alwaysAllow": "Permetti sempre",
+		"togglePromptInclusion": "Attiva/disattiva inclusione prompt",
+		"parameters": "Parametri",
+		"noDescription": "Nessuna descrizione"
+	},
+	"resource": {
+		"alwaysAllow": "Permetti sempre",
+		"noDescription": "Nessuna descrizione",
+		"returns": "Restituisce"
 	}
 }

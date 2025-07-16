@@ -5,7 +5,8 @@
 		"invalid_settings_validation": "Format pengaturan MCP tidak valid: {{errorMessages}}",
 		"create_json": "Gagal membuat atau membuka .roo/mcp.json: {{error}}",
 		"failed_update_project": "Gagal memperbarui server MCP proyek",
-		"invalidJsonArgument": "Roo mencoba menggunakan {{toolName}} dengan argumen JSON yang tidak valid. Mencoba lagi..."
+		"invalidJsonArgument": "Roo mencoba menggunakan {{toolName}} dengan argumen JSON yang tidak valid. Mencoba lagi...",
+		"failed_toggle_resource": "Gagal mengalihkan 'selalu izinkan' untuk sumber daya \"{{resourceUri}}\" di server \"{{serverName}}\""
 	},
 	"info": {
 		"server_restarting": "Merestart server MCP {{serverName}}...",
@@ -18,5 +19,16 @@
 		"refreshing_all": "Me-refresh semua server MCP...",
 		"all_refreshed": "Semua server MCP telah di-refresh.",
 		"project_config_deleted": "File konfigurasi MCP proyek dihapus. Semua server MCP proyek telah diputus koneksinya."
+	},
+	"tool": {
+		"alwaysAllow": "Selalu izinkan",
+		"togglePromptInclusion": "Alihkan penyertaan prompt",
+		"parameters": "Parameter",
+		"noDescription": "Tidak ada deskripsi"
+	},
+	"resource": {
+		"alwaysAllow": "Selalu izinkan",
+		"noDescription": "Tidak ada deskripsi",
+		"returns": "Mengembalikan"
 	}
 }

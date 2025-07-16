@@ -47,7 +47,67 @@ export async function accessMcpResourceTool(
 				uri,
 			} satisfies ClineAskUseMcpServer)
 
-			const didApprove = await askApproval("use_mcp_server", completeMessage)
+			// Check for auto-approval
+			const state = await cline.providerRef.deref()?.getState()
+			const { autoApprovalEnabled, alwaysAllowMcp } = state ?? {}
+
+			const mcpHub = cline.providerRef.deref()?.getMcpHub()
+			const servers = mcpHub?.getAllServers() || []
+			const server = servers.find((s) => s.name === server_name)
+			const resources = [...(server?.resources || []), ...(server?.resourceTemplates || [])]
+
+			// Find matching resource or resource template
+			const resource = resources.find((r) => {
+				if ("uri" in r && r.uri === uri) {
+					return true
+				}
+				if ("uriTemplate" in r) {
+					// Enhanced template matching that handles different parameter types
+					// Supports: {param} for single segment, {param*} for zero or more segments,
+					// {param+} for one or more segments, and * for wildcards
+
+					// First, handle template parameters
+					let templateRegex = r.uriTemplate.replace(/\{([^}]+)\}/g, (match, param) => {
+						// Handle different parameter types based on convention
+						if (param.endsWith("*")) {
+							// {param*} - matches zero or more path segments
+							return "___ZERO_OR_MORE___"
+						} else if (param.endsWith("+")) {
+							// {param+} - matches one or more path segments
+							return "___ONE_OR_MORE___"
+						} else {
+							// {param} - matches a single path segment (no slashes)
+							return "___SINGLE_SEGMENT___"
+						}
+					})
+
+					// Then escape special regex characters
+					templateRegex = templateRegex.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+
+					// Replace our placeholders with actual regex patterns
+					templateRegex = templateRegex
+						.replace(/___ZERO_OR_MORE___/g, ".*")
+						.replace(/___ONE_OR_MORE___/g, ".+")
+						.replace(/___SINGLE_SEGMENT___/g, "[^/]+")
+
+					// Handle standalone wildcards (that weren't part of template parameters)
+					templateRegex = templateRegex.replace(/\\\*/g, ".*")
+
+					const regex = new RegExp(`^${templateRegex}$`)
+					return regex.test(uri)
+				}
+				return false
+			})
+
+			const shouldAutoApprove = autoApprovalEnabled && alwaysAllowMcp && resource?.alwaysAllow
+
+			let didApprove = false
+			if (shouldAutoApprove) {
+				await cline.say("mcp_server_request_started")
+				didApprove = true
+			} else {
+				didApprove = await askApproval("use_mcp_server", completeMessage)
+			}
 
 			if (!didApprove) {
 				return

@@ -93,7 +93,6 @@ describe("McpHub", () => {
 		// Mock console.error to suppress error messages during tests
 		console.error = vi.fn()
 
-
 		const mockUri: Uri = {
 			scheme: "file",
 			authority: "",
@@ -449,6 +448,152 @@ describe("McpHub", () => {
 			const writtenConfig = JSON.parse(callToUse[1])
 			expect(writtenConfig.mcpServers["test-server"].disabledTools).toBeDefined()
 			expect(writtenConfig.mcpServers["test-server"].disabledTools).toContain("new-tool")
+		})
+	})
+
+	describe("toggleResourceAlwaysAllow", () => {
+		it("should add resource to always allow list when enabling", async () => {
+			const mockConfig = {
+				mcpServers: {
+					"test-server": {
+						type: "stdio",
+						command: "node",
+						args: ["test.js"],
+						alwaysAllowResources: [],
+					},
+				},
+			}
+
+			// Mock reading initial config
+			vi.mocked(fs.readFile).mockResolvedValueOnce(JSON.stringify(mockConfig))
+
+			// Set up mock connection
+			const mockConnection: McpConnection = {
+				server: {
+					name: "test-server",
+					type: "stdio",
+					command: "node",
+					args: ["test.js"],
+					alwaysAllowResources: [],
+					source: "global",
+				} as any,
+				client: {} as any,
+				transport: {} as any,
+			}
+			mcpHub.connections = [mockConnection]
+
+			await mcpHub.toggleResourceAlwaysAllow("test-server", "global", "resource://test", true)
+
+			// Verify the config was updated correctly
+			const writeCalls = vi.mocked(fs.writeFile).mock.calls
+			expect(writeCalls.length).toBeGreaterThan(0)
+
+			// Find the write call
+			const callToUse = writeCalls[writeCalls.length - 1]
+			expect(callToUse).toBeTruthy()
+
+			// The path might be normalized differently on different platforms,
+			// so we'll just check that we have a call with valid content
+			const writtenConfig = JSON.parse(callToUse[1] as string)
+			expect(writtenConfig.mcpServers).toBeDefined()
+			expect(writtenConfig.mcpServers["test-server"]).toBeDefined()
+			expect(Array.isArray(writtenConfig.mcpServers["test-server"].alwaysAllowResources)).toBe(true)
+			expect(writtenConfig.mcpServers["test-server"].alwaysAllowResources).toContain("resource://test")
+		})
+
+		it("should remove resource from always allow list when disabling", async () => {
+			const mockConfig = {
+				mcpServers: {
+					"test-server": {
+						type: "stdio",
+						command: "node",
+						args: ["test.js"],
+						alwaysAllowResources: ["resource://existing"],
+					},
+				},
+			}
+
+			// Mock reading initial config
+			vi.mocked(fs.readFile).mockResolvedValueOnce(JSON.stringify(mockConfig))
+
+			// Set up mock connection
+			const mockConnection: McpConnection = {
+				server: {
+					name: "test-server",
+					type: "stdio",
+					command: "node",
+					args: ["test.js"],
+					alwaysAllowResources: ["resource://existing"],
+					source: "global",
+				} as any,
+				client: {} as any,
+				transport: {} as any,
+			}
+			mcpHub.connections = [mockConnection]
+
+			await mcpHub.toggleResourceAlwaysAllow("test-server", "global", "resource://existing", false)
+
+			// Verify the config was updated correctly
+			const writeCalls = vi.mocked(fs.writeFile).mock.calls
+			expect(writeCalls.length).toBeGreaterThan(0)
+
+			// Find the write call
+			const callToUse = writeCalls[writeCalls.length - 1]
+			expect(callToUse).toBeTruthy()
+
+			// The path might be normalized differently on different platforms,
+			// so we'll just check that we have a call with valid content
+			const writtenConfig = JSON.parse(callToUse[1] as string)
+			expect(writtenConfig.mcpServers).toBeDefined()
+			expect(writtenConfig.mcpServers["test-server"]).toBeDefined()
+			expect(Array.isArray(writtenConfig.mcpServers["test-server"].alwaysAllowResources)).toBe(true)
+			expect(writtenConfig.mcpServers["test-server"].alwaysAllowResources).not.toContain("resource://existing")
+		})
+
+		it("should initialize alwaysAllowResources if it does not exist", async () => {
+			const mockConfig = {
+				mcpServers: {
+					"test-server": {
+						type: "stdio",
+						command: "node",
+						args: ["test.js"],
+					},
+				},
+			}
+
+			// Mock reading initial config
+			vi.mocked(fs.readFile).mockResolvedValueOnce(JSON.stringify(mockConfig))
+
+			// Set up mock connection
+			const mockConnection: McpConnection = {
+				server: {
+					name: "test-server",
+					type: "stdio",
+					command: "node",
+					args: ["test.js"],
+					alwaysAllowResources: [],
+					source: "global",
+				} as any,
+				client: {} as any,
+				transport: {} as any,
+			}
+			mcpHub.connections = [mockConnection]
+
+			await mcpHub.toggleResourceAlwaysAllow("test-server", "global", "resource://new", true)
+
+			// Verify the config was updated with initialized alwaysAllowResources
+			const writeCalls = vi.mocked(fs.writeFile).mock.calls
+			expect(writeCalls.length).toBeGreaterThan(0)
+
+			// Find the write call
+			const callToUse = writeCalls[writeCalls.length - 1]
+			expect(callToUse).toBeTruthy()
+
+			const writtenConfig = JSON.parse(callToUse[1] as string)
+			expect(writtenConfig.mcpServers).toBeDefined()
+			expect(writtenConfig.mcpServers["test-server"]).toBeDefined()
+			expect(Array.isArray(writtenConfig.mcpServers["test-server"].alwaysAllowResources)).toBe(true)
+			expect(writtenConfig.mcpServers["test-server"].alwaysAllowResources).toContain("resource://new")
 		})
 	})
 

@@ -103,6 +103,7 @@ export interface WebviewMessage {
 		| "refreshAllMcpServers"
 		| "toggleToolAlwaysAllow"
 		| "toggleToolEnabledForPrompt"
+		| "toggleResourceAlwaysAllow"
 		| "toggleMcpServer"
 		| "updateMcpTimeout"
 		| "fuzzyMatchThreshold"
@@ -208,6 +209,7 @@ export interface WebviewMessage {
 	audioType?: AudioType
 	serverName?: string
 	toolName?: string
+	resourceUri?: string
 	alwaysAllow?: boolean
 	isEnabled?: boolean
 	mode?: Mode

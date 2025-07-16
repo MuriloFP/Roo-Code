@@ -5,7 +5,8 @@
 		"invalid_settings_validation": "Formato de configurações MCP inválido: {{errorMessages}}",
 		"create_json": "Falha ao criar ou abrir .roo/mcp.json: {{error}}",
 		"failed_update_project": "Falha ao atualizar os servidores MCP do projeto",
-		"invalidJsonArgument": "Roo tentou usar {{toolName}} com um argumento JSON inválido. Tentando novamente..."
+		"invalidJsonArgument": "Roo tentou usar {{toolName}} com um argumento JSON inválido. Tentando novamente...",
+		"failed_toggle_resource": "Falha ao alternar a permissão para o recurso \"{{resourceUri}}\" no servidor \"{{serverName}}\""
 	},
 	"info": {
 		"server_restarting": "Reiniciando o servidor MCP {{serverName}}...",
@@ -18,5 +19,16 @@
 		"refreshing_all": "Atualizando todos os servidores MCP...",
 		"all_refreshed": "Todos os servidores MCP foram atualizados.",
 		"project_config_deleted": "Arquivo de configuração MCP do projeto excluído. Todos os servidores MCP do projeto foram desconectados."
+	},
+	"tool": {
+		"alwaysAllow": "Sempre permitir",
+		"togglePromptInclusion": "Alternar inclusão de prompt",
+		"parameters": "Parâmetros",
+		"noDescription": "Sem descrição"
+	},
+	"resource": {
+		"alwaysAllow": "Sempre permitir",
+		"noDescription": "Sem descrição",
+		"returns": "Retorna"
 	}
 }

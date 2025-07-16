@@ -5,7 +5,8 @@
 		"invalid_settings_validation": "Format de configuració MCP no vàlid: {{errorMessages}}",
 		"create_json": "Ha fallat la creació o obertura de .roo/mcp.json: {{error}}",
 		"failed_update_project": "Ha fallat l'actualització dels servidors MCP del projecte",
-		"invalidJsonArgument": "Roo ha intentat utilitzar {{toolName}} amb un argument JSON no vàlid. Tornant a intentar..."
+		"invalidJsonArgument": "Roo ha intentat utilitzar {{toolName}} amb un argument JSON no vàlid. Tornant a intentar...",
+		"failed_toggle_resource": "No s'ha pogut activar o desactivar el permís permanent per al recurs \"{{resourceUri}}\" al servidor \"{{serverName}}\""
 	},
 	"info": {
 		"server_restarting": "Reiniciant el servidor MCP {{serverName}}...",
@@ -18,5 +19,16 @@
 		"refreshing_all": "Actualitzant tots els servidors MCP...",
 		"all_refreshed": "Tots els servidors MCP han estat actualitzats.",
 		"project_config_deleted": "Fitxer de configuració MCP del projecte eliminat. Tots els servidors MCP del projecte han estat desconnectats."
+	},
+	"tool": {
+		"alwaysAllow": "Permet sempre",
+		"togglePromptInclusion": "Commuta la inclusió de l'indicador",
+		"parameters": "Paràmetres",
+		"noDescription": "Sense descripció"
+	},
+	"resource": {
+		"alwaysAllow": "Permet sempre",
+		"noDescription": "Sense descripció",
+		"returns": "Retorna"
 	}
 }

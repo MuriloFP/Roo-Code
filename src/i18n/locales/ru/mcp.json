@@ -5,7 +5,8 @@
 		"invalid_settings_validation": "Неверный формат настроек MCP: {{errorMessages}}",
 		"create_json": "Не удалось создать или открыть .roo/mcp.json: {{error}}",
 		"failed_update_project": "Не удалось обновить серверы проекта MCP",
-		"invalidJsonArgument": "Roo попытался использовать {{toolName}} с недопустимым JSON-аргументом. Повторная попытка..."
+		"invalidJsonArgument": "Roo попытался использовать {{toolName}} с недопустимым JSON-аргументом. Повторная попытка...",
+		"failed_toggle_resource": "Не удалось переключить 'всегда разрешать' для ресурса \"{{resourceUri}}\" на сервере \"{{serverName}}\""
 	},
 	"info": {
 		"server_restarting": "Перезапуск сервера MCP {{serverName}}...",
@@ -18,5 +19,16 @@
 		"refreshing_all": "Обновление всех MCP серверов...",
 		"all_refreshed": "Все MCP серверы обновлены.",
 		"project_config_deleted": "Файл конфигурации MCP проекта удален. Все MCP серверы проекта отключены."
+	},
+	"tool": {
+		"alwaysAllow": "Всегда разрешать",
+		"togglePromptInclusion": "Переключить включение подсказки",
+		"parameters": "Параметры",
+		"noDescription": "Нет описания"
+	},
+	"resource": {
+		"alwaysAllow": "Всегда разрешать",
+		"noDescription": "Нет описания",
+		"returns": "Возвращает"
 	}
 }

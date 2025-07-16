@@ -5,7 +5,8 @@
 		"invalid_settings_validation": "Định dạng cài đặt MCP không hợp lệ: {{errorMessages}}",
 		"create_json": "Không thể tạo hoặc mở .roo/mcp.json: {{error}}",
 		"failed_update_project": "Không thể cập nhật máy chủ MCP của dự án",
-		"invalidJsonArgument": "Roo đã cố gắng sử dụng {{toolName}} với tham số JSON không hợp lệ. Đang thử lại..."
+		"invalidJsonArgument": "Roo đã cố gắng sử dụng {{toolName}} với tham số JSON không hợp lệ. Đang thử lại...",
+		"failed_toggle_resource": "Không thể bật/tắt luôn cho phép tài nguyên \"{{resourceUri}}\" trên máy chủ \"{{serverName}}\""
 	},
 	"info": {
 		"server_restarting": "Đang khởi động lại máy chủ MCP {{serverName}}...",
@@ -18,5 +19,16 @@
 		"refreshing_all": "Đang làm mới tất cả các máy chủ MCP...",
 		"all_refreshed": "Tất cả các máy chủ MCP đã được làm mới.",
 		"project_config_deleted": "Tệp cấu hình MCP của dự án đã bị xóa. Tất cả các máy chủ MCP của dự án đã bị ngắt kết nối."
+	},
+	"tool": {
+		"alwaysAllow": "Luôn cho phép",
+		"togglePromptInclusion": "Chuyển đổi bao gồm lời nhắc",
+		"parameters": "Tham số",
+		"noDescription": "Không có mô tả"
+	},
+	"resource": {
+		"alwaysAllow": "Luôn cho phép",
+		"noDescription": "Không có mô tả",
+		"returns": "Trả về"
 	}
 }

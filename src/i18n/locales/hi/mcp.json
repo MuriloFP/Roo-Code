@@ -5,7 +5,8 @@
 		"invalid_settings_validation": "अमान्य MCP सेटिंग्स फॉर्मेट: {{errorMessages}}",
 		"create_json": ".roo/mcp.json बनाने या खोलने में विफल: {{error}}",
 		"failed_update_project": "प्रोजेक्ट MCP सर्वर अपडेट करने में विफल",
-		"invalidJsonArgument": "Roo ने {{toolName}} को अमान्य JSON आर्गुमेंट के साथ उपयोग करने की कोशिश की। फिर से कोशिश कर रहा है..."
+		"invalidJsonArgument": "Roo ने {{toolName}} को अमान्य JSON आर्गुमेंट के साथ उपयोग करने की कोशिश की। फिर से कोशिश कर रहा है...",
+		"failed_toggle_resource": "सर्वर \"{{serverName}}\" पर संसाधन \"{{resourceUri}}\" के लिए हमेशा अनुमति दें को टॉगल करने में विफल"
 	},
 	"info": {
 		"server_restarting": "{{serverName}} MCP सर्वर पुनः प्रारंभ हो रहा है...",
@@ -18,5 +19,16 @@
 		"refreshing_all": "सभी एमसीपी सर्वर रीफ्रेश हो रहे हैं...",
 		"all_refreshed": "सभी एमसीपी सर्वर रीफ्रेश हो गए हैं।",
 		"project_config_deleted": "प्रोजेक्ट एमसीपी कॉन्फ़िगरेशन फ़ाइल हटा दी गई है। सभी प्रोजेक्ट एमसीपी सर्वर डिस्कनेक्ट कर दिए गए हैं।"
+	},
+	"tool": {
+		"alwaysAllow": "हमेशा अनुमति दें",
+		"togglePromptInclusion": "प्रॉम्प्ट समावेशन टॉगल करें",
+		"parameters": "पैरामीटर",
+		"noDescription": "कोई विवरण नहीं"
+	},
+	"resource": {
+		"alwaysAllow": "हमेशा अनुमति दें",
+		"noDescription": "कोई विवरण नहीं",
+		"returns": "रिटर्न"
 	}
 }

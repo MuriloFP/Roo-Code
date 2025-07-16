@@ -5,7 +5,8 @@
 		"invalid_settings_validation": "Ungültiges MCP-Einstellungen-Format: {{errorMessages}}",
 		"create_json": "Fehler beim Erstellen oder Öffnen von .roo/mcp.json: {{error}}",
 		"failed_update_project": "Fehler beim Aktualisieren der Projekt-MCP-Server",
-		"invalidJsonArgument": "Roo hat versucht, {{toolName}} mit einem ungültigen JSON-Argument zu verwenden. Wiederhole..."
+		"invalidJsonArgument": "Roo hat versucht, {{toolName}} mit einem ungültigen JSON-Argument zu verwenden. Wiederhole...",
+		"failed_toggle_resource": "Das Umschalten der dauerhaften Berechtigung für die Ressource \"{{resourceUri}}\" auf dem Server \"{{serverName}}\" ist fehlgeschlagen."
 	},
 	"info": {
 		"server_restarting": "MCP-Server {{serverName}} wird neu gestartet...",
@@ -18,5 +19,16 @@
 		"refreshing_all": "Alle MCP-Server werden aktualisiert...",
 		"all_refreshed": "Alle MCP-Server wurden aktualisiert.",
 		"project_config_deleted": "Projekt-MCP-Konfigurationsdatei gelöscht. Alle Projekt-MCP-Server wurden getrennt."
+	},
+	"tool": {
+		"alwaysAllow": "Immer erlauben",
+		"togglePromptInclusion": "Prompt-Einbeziehung umschalten",
+		"parameters": "Parameter",
+		"noDescription": "Keine Beschreibung"
+	},
+	"resource": {
+		"alwaysAllow": "Immer erlauben",
+		"noDescription": "Keine Beschreibung",
+		"returns": "Gibt zurück"
 	}
 }

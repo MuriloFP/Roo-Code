@@ -5,7 +5,8 @@
 		"invalid_settings_validation": "Invalid MCP settings format: {{errorMessages}}",
 		"create_json": "Failed to create or open .roo/mcp.json: {{error}}",
 		"failed_update_project": "Failed to update project MCP servers",
-		"invalidJsonArgument": "Roo tried to use {{toolName}} with an invalid JSON argument. Retrying..."
+		"invalidJsonArgument": "Roo tried to use {{toolName}} with an invalid JSON argument. Retrying...",
+		"failed_toggle_resource": "Failed to toggle always allow for resource \"{{resourceUri}}\" on server \"{{serverName}}\""
 	},
 	"info": {
 		"server_restarting": "Restarting {{serverName}} MCP server...",
@@ -18,5 +19,16 @@
 		"refreshing_all": "Refreshing all MCP servers...",
 		"all_refreshed": "All MCP servers have been refreshed.",
 		"project_config_deleted": "Project MCP configuration file deleted. All project MCP servers have been disconnected."
+	},
+	"tool": {
+		"alwaysAllow": "Always allow",
+		"togglePromptInclusion": "Toggle prompt inclusion",
+		"parameters": "Parameters",
+		"noDescription": "No description"
+	},
+	"resource": {
+		"alwaysAllow": "Always allow",
+		"noDescription": "No description",
+		"returns": "Returns"
 	}
 }
